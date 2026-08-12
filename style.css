@@ -1,0 +1,462 @@
+/* =========================================
+   THEME TOKENS
+========================================= */
+:root {
+  --parchment-brown: #7a5e2a;
+  --ink-dark: #3b2608;
+  --ink-red: #6e1f16;
+  --ink-red-light: #9c3b2c;
+  --font-display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --font-body: 'IM Fell English', Georgia, serif;
+  --font-hand: 'Mrs Saint Delafield', 'Segoe Script', cursive;
+}
+
+/* =========================================
+   GLOBAL PAGE SETUP
+========================================= */
+html, body, #map {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f5f0e0;
+  overflow: hidden;
+}
+
+/* =========================================
+   MAP VISIBILITY & TRANSITION
+========================================= */
+#map {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+}
+
+.mapVisible {
+  opacity: 1 !important;
+}
+
+/* Enchanted parchment treatment for the map tiles — this is what makes
+   plain OpenStreetMap read as an old hand-inked map. Switched off in
+   "plain map" mode for real-world navigation. */
+body:not(.plainMode) #map .leaflet-tile-pane {
+  filter: sepia(0.55) saturate(1.7) hue-rotate(-10deg) contrast(1.15) brightness(0.92);
+}
+
+/* =========================================
+   SCROLL 1 – NAME ENTRY
+========================================= */
+#scrollIntro {
+  position: fixed;
+  inset: 0;
+  background: url("assets/parchment.jpg") center/cover no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 2000;
+  animation: unroll 1s ease-out forwards;
+}
+
+#scrollInner {
+  background: rgba(255, 248, 220, 0.85);
+  border: 2px solid var(--parchment-brown);
+  border-radius: 12px;
+  padding: 2rem 3rem;
+  max-width: min(90vw, 30rem);
+  box-sizing: border-box;
+  text-align: center;
+  font-family: var(--font-display);
+  color: var(--ink-dark);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+#scrollTitle {
+  font-size: clamp(1.4rem, 5vw, 1.8rem);
+  margin-bottom: 1rem;
+}
+
+#marauderName {
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--parchment-brown);
+  border-radius: 6px;
+  text-align: center;
+  background: rgba(255, 255, 240, 0.8);
+  margin-bottom: 1rem;
+  width: min(80%, 16rem);
+}
+
+#enterName {
+  font-family: var(--font-display);
+  background: var(--parchment-brown);
+  color: #fffaf0;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.05rem;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+}
+#enterName:hover {
+  background: #9c7b3b;
+  transform: scale(1.05);
+}
+
+/* =========================================
+   SCROLL 2 – I SOLEMNLY SWEAR
+========================================= */
+#scrollReveal {
+  position: fixed;
+  inset: 0;
+  background: url("assets/parchment.jpg") center/cover no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 1900;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#scrollInner2 {
+  background: rgba(255, 248, 220, 0.85);
+  border: 2px solid var(--parchment-brown);
+  border-radius: 12px;
+  padding: 2rem 3rem;
+  max-width: min(90vw, 30rem);
+  box-sizing: border-box;
+  text-align: center;
+  font-family: var(--font-display);
+  color: var(--ink-dark);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+#scrollLine {
+  font-size: clamp(1.3rem, 5vw, 1.8rem);
+  margin-bottom: 1.2rem;
+  font-weight: bold;
+  animation: fadeIn 2s ease forwards;
+}
+
+#enterMap {
+  font-family: var(--font-display);
+  background: var(--parchment-brown);
+  color: #fffaf0;
+  border: none;
+  padding: 0.6rem 1.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.05rem;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+}
+#enterMap:hover {
+  background: #9c7b3b;
+  transform: scale(1.05);
+}
+
+/* Leaflet gives every divIcon a white box + grey border by default —
+   all of our markers are custom-styled, so strip that off. */
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
+}
+
+/* =========================================
+   FLOATING NAME LABEL (you, on the map)
+========================================= */
+.marauderNameLabel {
+  font-family: var(--font-hand);
+  font-size: 1.5rem;
+  color: var(--ink-red);
+  background: rgba(255, 255, 240, 0.88);
+  border: 1px solid rgba(122, 94, 42, 0.5);
+  border-radius: 6px;
+  padding: 0 8px;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow: 0 0 3px #fff;
+  opacity: 0;
+  animation: inkFade 2s ease forwards;
+}
+body.plainMode .marauderNameLabel {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink-dark);
+}
+
+/* =========================================
+   PLACE LABELS FOR MARAUDER MODE
+========================================= */
+.placeLabelText {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: #2c1d0c;
+  text-shadow: 0 0 3px rgba(255,255,255,0.7);
+  background: rgba(255,255,240,0.85);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(120,90,60,0.4);
+}
+
+/* Ink-drop marker pins, replacing Leaflet's default blue teardrop */
+.inkPin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--ink-red-light), var(--ink-red) 70%);
+  box-shadow: 0 0 6px rgba(110, 31, 22, 0.6), 0 0 2px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(59, 38, 8, 0.6);
+}
+
+/* =========================================
+   FOOTPRINT TRAIL
+========================================= */
+.footprint-icon {
+  width: 24px;
+  height: 24px;
+  position: relative;
+  animation: inkFade 1.2s ease forwards;
+}
+.foot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 10px;
+  border-radius: 50% 50% 45% 45%;
+  background: var(--ink-red);
+}
+.foot-left { transform: translate(-9px, -50%) rotate(-10deg); }
+.foot-right { transform: translate(3px, -50%) rotate(10deg); }
+
+/* =========================================
+   ANIMATIONS
+========================================= */
+@keyframes rollUp {
+  0% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(0); opacity: 0; }
+}
+
+@keyframes unroll {
+  0% { transform: scaleY(0); opacity: 0; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes inkFade {
+  from { opacity: 0; transform: scale(0.9); filter: blur(2px); }
+  to { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+/* =========================================
+   MARAUDER MODE BUTTON
+========================================= */
+#modeToggle {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: 10px;
+  background: var(--ink-red);
+  color: #fffaf0;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: bold;
+  font-size: 1rem;
+  z-index: 1100;
+  box-shadow: 0 0 8px rgba(110, 31, 22, 0.5);
+  transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+#modeToggle.active {
+  background: #5a4630;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+#modeToggle:hover {
+  transform: scale(1.05);
+}
+
+/* Magical ripple effect */
+#rippleEffect {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0.1) 70%, transparent 100%);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: width 1.5s ease, height 1.5s ease, opacity 1s ease;
+  z-index: 9999;
+}
+
+/* =========================================
+   MAP DRESSING — vignette, title, compass
+========================================= */
+#mapVignette {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+  box-shadow:
+    inset 0 0 60px 20px rgba(59, 38, 8, 0.55),
+    inset 0 0 160px 50px rgba(59, 38, 8, 0.35);
+}
+#mapVignette.show {
+  opacity: 1;
+}
+body.plainMode #mapVignette.show {
+  opacity: 0;
+}
+
+#titleBanner {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 600;
+  pointer-events: none;
+  font-family: var(--font-hand);
+  font-size: clamp(1.4rem, 4vw, 2.1rem);
+  color: var(--ink-red);
+  text-shadow: 0 0 6px rgba(255, 248, 220, 0.9), 0 0 2px rgba(255, 248, 220, 0.9);
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+}
+#titleBanner.show {
+  opacity: 0.85;
+}
+body.plainMode #titleBanner.show {
+  opacity: 0;
+}
+
+#compassRose {
+  position: fixed;
+  left: 14px;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  width: 84px;
+  height: 84px;
+  z-index: 600;
+  pointer-events: none;
+  color: var(--ink-red);
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+}
+#compassRose.show {
+  opacity: 0.75;
+}
+body.plainMode #compassRose.show {
+  opacity: 0;
+}
+
+/* =========================================
+   LEAFLET POPUP THEMING
+========================================= */
+.leaflet-popup-content-wrapper {
+  background: #fbf3dd;
+  border: 1px solid var(--parchment-brown);
+  border-radius: 8px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.35);
+}
+.leaflet-popup-content {
+  font-family: var(--font-body);
+  color: var(--ink-dark);
+  font-size: 1rem;
+}
+.leaflet-popup-tip {
+  background: #fbf3dd;
+  border: 1px solid var(--parchment-brown);
+}
+
+/* =========================================
+   MARKER-NAMING MODAL (replaces prompt())
+========================================= */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 12, 4, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.modalOverlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modalCard {
+  background: #f5ecd7 url("assets/parchment.jpg") center/cover no-repeat;
+  border: 2px solid var(--parchment-brown);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  width: min(90vw, 22rem);
+  box-sizing: border-box;
+  text-align: center;
+  font-family: var(--font-display);
+  color: var(--ink-dark);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.45);
+}
+.modalCard h2 {
+  margin: 0 0 1rem;
+  font-size: 1.4rem;
+}
+#markerNameInput {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--parchment-brown);
+  border-radius: 6px;
+  text-align: center;
+  background: rgba(255, 255, 240, 0.85);
+  width: 90%;
+  box-sizing: border-box;
+}
+.modalButtons {
+  margin-top: 1.1rem;
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+}
+.modalButtons button {
+  font-family: var(--font-display);
+  border: none;
+  padding: 0.5rem 1.1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+}
+#markerConfirm {
+  background: var(--ink-red);
+  color: #fffaf0;
+}
+#markerConfirm:hover {
+  background: var(--ink-red-light);
+}
+#markerCancel {
+  background: #d8cba3;
+  color: var(--ink-dark);
+}
+#markerCancel:hover {
+  background: #c7b98a;
+}
