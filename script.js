@@ -182,20 +182,18 @@ function runSorting() {
   sortingResult.classList.add("hidden");
   continueSortingBtn.classList.add("hidden");
 
-  // A staggered "Hmmmm... Hmmmm... I've got it!" build-up rather than
-  // one flat line — longer suspense before the reveal.
-  sortingStatus.textContent = "Hmmmm...";
-  speakAsHat("Hmmmm.");
+  // "What do we have here?" -> a genuine 2s silent pause (just the hat
+  // wobbling, no speech — TTS engines can't convincingly drawl out a
+  // wordless "hmmmm", so a real held pause reads as thinking far
+  // better than trying to stretch a nonsense sound) -> "I have it!
+  // You are a—" -> reveal completes the sentence with the house name.
+  sortingStatus.textContent = "What do we have here?";
+  speakAsHat("What do we have here?");
 
   setTimeout(() => {
-    sortingStatus.textContent = "Hmmmm...";
-    speakAsHat("Hmmmm.");
-  }, 1600);
-
-  setTimeout(() => {
-    sortingStatus.textContent = "I've got it!";
-    speakAsHat("I've got it!");
-  }, 3400);
+    sortingStatus.textContent = "I have it! You are a...";
+    speakAsHat("I have it! You are a...");
+  }, 4000);
 
   setTimeout(() => {
     marauderHouse = randomHouse();
@@ -212,7 +210,7 @@ function runSorting() {
 
     const rect = sortingHat.getBoundingClientRect();
     fireConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, [marauderHouse.color, marauderHouse.accent, "#f5ecd7"]);
-  }, 4800);
+  }, 6800);
 }
 
 continueSortingBtn.addEventListener("click", () => {
