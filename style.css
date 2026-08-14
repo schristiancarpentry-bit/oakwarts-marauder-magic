@@ -343,6 +343,17 @@ body.plainMode .marauderNameLabel {
   opacity: 1;
 }
 
+/* Ambient film-character "ghosts" (Dobby, Hagrid, etc.) — pure
+   decoration, never real people. Dashed border + italic + lower
+   opacity keeps them visually distinct from real friends (solid
+   amber) at a glance, not just distinguishable by name. */
+.npcLabel {
+  animation: none;
+  opacity: 0.8;
+  font-style: italic;
+  border-style: dashed;
+}
+
 /* =========================================
    PLACE LABELS FOR MARAUDER MODE
 ========================================= */
@@ -547,6 +558,32 @@ body.plainMode .marauderNameLabel {
   opacity: 0;
   transition: width 1.4s cubic-bezier(0.4, 0, 0.2, 1), height 1.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease 0.9s;
   z-index: 9999;
+}
+
+/* Wand flick — plays alongside the ripple/confetti at the same three
+   "magic" moments (opening the map, engaging Marauder Mode, Exit).
+   transform-origin sits near the handle end so the flick reads as a
+   tap/swish from the grip, not a spin around the centre. */
+#wandEffect {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 90px;
+  height: 18px;
+  pointer-events: none;
+  transform-origin: 8% 50%;
+  opacity: 0;
+  z-index: 9998;
+}
+#wandEffect.flick {
+  animation: wandFlick 0.7s ease-out;
+}
+@keyframes wandFlick {
+  0%   { opacity: 0; transform: translate(-8%, -50%) rotate(-55deg) scale(0.6); }
+  18%  { opacity: 1; transform: translate(-8%, -50%) rotate(-35deg) scale(1); }
+  45%  { opacity: 1; transform: translate(-8%, -50%) rotate(20deg) scale(1); }
+  72%  { opacity: 1; transform: translate(-8%, -50%) rotate(-8deg) scale(1); }
+  100% { opacity: 0; transform: translate(-8%, -50%) rotate(0deg) scale(0.9); }
 }
 
 /* =========================================

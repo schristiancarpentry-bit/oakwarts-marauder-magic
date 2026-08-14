@@ -94,6 +94,31 @@ function fireInkRippleAt(x, y) {
   });
 }
 
+const wandSound = new Audio("assets/wand-flick.mp3");
+wandSound.volume = 0.7;
+
+// A quick wand flick at a screen point — plays alongside the ripple and
+// confetti at all three "magic" moments (open, Marauder Mode on, Exit).
+function fireWandAt(x, y) {
+  const wand = document.getElementById("wandEffect");
+  wand.style.left = `${x}px`;
+  wand.style.top = `${y}px`;
+  wand.classList.remove("flick");
+  void wand.offsetWidth; // restart the animation if it's fired again mid-flick
+  wand.classList.add("flick");
+
+  wandSound.currentTime = 0;
+  wandSound.play().catch(() => {}); // autoplay can be blocked in some contexts — fail quietly
+}
+
+// The three "magic" moments all want the same wand + confetti pairing —
+// only the ripple mechanics differ per moment (a growing map reveal on
+// open, a plain ripple on the toggle, a shrinking reverse on Exit).
+function fireMagicAt(x, y) {
+  fireWandAt(x, y);
+  fireConfetti(x, y);
+}
+
 // Step 1: enter name
 function proceedToOath() {
   const firstName = nameInput.value.trim();
@@ -150,7 +175,7 @@ function startMap(event) {
   ripple.style.height = "0";
   ripple.style.opacity = "1";
 
-  fireConfetti(x, y);
+  fireMagicAt(x, y);
 
   // Ink-blot reveal: the map is raised above the parchment and shown
   // only within a growing circle centred on the tap point, so the
@@ -192,6 +217,7 @@ const mischiefFull = document.getElementById("mischiefFull");
 
 function closeMap() {
   leaveRoomCompletely();
+  clearNpcs(); // stop the wander interval immediately rather than leaving it running in the background
 
   const mapEl = document.getElementById("map");
   const rect = exitButton.getBoundingClientRect();
@@ -212,7 +238,7 @@ function closeMap() {
   void ripple.offsetWidth; // force layout so the snap above isn't animated
   ripple.style.transition = "";
 
-  fireConfetti(x, y);
+  fireMagicAt(x, y);
 
   mapEl.style.setProperty("--tap-x", `${x}px`);
   mapEl.style.setProperty("--tap-y", `${y}px`);
@@ -282,14 +308,19 @@ function setMarauderMode(on) {
   modeToggleBtn.classList.toggle("active", on);
 
   // The wand-tap moment: switching plain -> enchanted gets the same ink
-  // ripple + confetti burst as opening the map in the first place,
-  // centred on the button rather than a random tap point.
+  // ripple + wand + confetti as opening the map in the first place,
+  // centred on the button rather than a random tap point. Ambient film
+  // characters also start wandering — they're part of the enchantment,
+  // not something a plain accurate map should show.
   if (!wasOn && on) {
     const rect = modeToggleBtn.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
     const y = rect.top + rect.height / 2;
     fireInkRippleAt(x, y);
-    fireConfetti(x, y);
+    fireMagicAt(x, y);
+    spawnNpcs();
+  } else if (wasOn && !on) {
+    clearNpcs();
   }
 
   // This toggle IS the privacy switch for the friend-presence feature —
@@ -439,6 +470,108 @@ function dropFootprint(lat, lon, bearingDeg) {
       if (el) el.style.opacity = opacity;
     }
   }, 250);
+}
+
+// -----------------------------
+// Ambient film characters — pure decoration, never real people. A
+// handful wander near you while Marauder Mode is on and vanish the
+// moment it's switched off, same as footprints/friends.
+// -----------------------------
+const NPC_ROSTER = [
+  "Dobby", "Hagrid", "Luna Lovegood", "Peeves", "Moaning Myrtle",
+  "Nearly Headless Nick", "Fang", "Professor McGonagall"
+];
+const NPC_COUNT = 4;
+const NPC_STEP_MS = 3000; // how often each one takes a "step"
+const NPC_WANDER_RADIUS_M = 60; // roughly how far they roam from where they spawned
+
+let npcs = []; // { name, pin, label, lat, lon, homeLat, homeLon }
+let npcInterval = null;
+
+function metersToDegLat(m) {
+  return m / 111320;
+}
+function metersToDegLon(m, atLat) {
+  return m / (111320 * Math.cos((atLat * Math.PI) / 180));
+}
+
+function spawnNpcs() {
+  clearNpcs();
+  const center = userMarker ? userMarker.getLatLng() : map.getCenter();
+  const chosen = [...NPC_ROSTER].sort(() => Math.random() - 0.5).slice(0, NPC_COUNT);
+
+  chosen.forEach(name => {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 15 + Math.random() * NPC_WANDER_RADIUS_M;
+    const lat = center.lat + metersToDegLat(Math.cos(angle) * dist);
+    const lon = center.lng + metersToDegLon(Math.sin(angle) * dist, center.lat);
+
+    const pin = L.circleMarker([lat, lon], {
+      radius: 5,
+      color: "#6e1f16",
+      fillColor: "#8a6238",
+      fillOpacity: 0.7,
+      opacity: 0.7
+    }).addTo(map);
+
+    const labelIcon = L.divIcon({
+      className: "npcLabelIcon",
+      html: `<div class="mapLabelWrap"><div class="marauderNameLabel npcLabel">${name}</div></div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 40]
+    });
+    const label = L.marker([lat, lon], { icon: labelIcon, interactive: false }).addTo(map);
+
+    npcs.push({ name, pin, label, lat, lon, homeLat: center.lat, homeLon: center.lng });
+  });
+
+  npcInterval = setInterval(stepNpcs, NPC_STEP_MS);
+}
+
+function stepNpcs() {
+  npcs.forEach(npc => {
+    const prevLat = npc.lat;
+    const prevLon = npc.lon;
+
+    const distFromHomeM = Math.hypot(
+      (npc.lat - npc.homeLat) * 111320,
+      (npc.lon - npc.homeLon) * 111320 * Math.cos((npc.homeLat * Math.PI) / 180)
+    );
+
+    // Wandered too far from where they spawned — head roughly back
+    // home (with a little wobble) instead of drifting off indefinitely.
+    let angle;
+    if (distFromHomeM > NPC_WANDER_RADIUS_M) {
+      angle = Math.atan2(npc.homeLon - npc.lon, npc.homeLat - npc.lat) + (Math.random() - 0.5) * 1.2;
+    } else {
+      angle = Math.random() * Math.PI * 2;
+    }
+
+    const dist = 4 + Math.random() * 8; // metres this step
+    const newLat = npc.lat + metersToDegLat(Math.cos(angle) * dist);
+    const newLon = npc.lon + metersToDegLon(Math.sin(angle) * dist, npc.lat);
+
+    npc.lat = newLat;
+    npc.lon = newLon;
+    npc.pin.setLatLng([newLat, newLon]);
+    npc.label.setLatLng([newLat, newLon]);
+
+    // Leave a footprint behind at the step they just took — same visual
+    // as real footprints, reinforcing "someone just walked through here."
+    dropFootprint(prevLat, prevLon, bearingBetween(prevLat, prevLon, newLat, newLon));
+  });
+}
+
+function clearNpcs() {
+  if (npcInterval) {
+    clearInterval(npcInterval);
+    npcInterval = null;
+  }
+  npcs.forEach(npc => {
+    map.removeLayer(npc.pin);
+    map.removeLayer(npc.label);
+  });
+  npcs = [];
 }
 
 if (navigator.geolocation) {
