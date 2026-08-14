@@ -14,6 +14,9 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
@@ -32,6 +35,20 @@
   <div id="scrollReveal">
     <div id="scrollInner2">
       <h1 id="scrollLine">I solemnly swear that I am up to good learning.</h1>
+
+      <div id="groupSection">
+        <label for="groupCode">Group code — optional, share it with friends to see each other</label>
+        <div id="groupCodeRow">
+          <input id="groupCode" type="text" placeholder="e.g. wizards42" autocomplete="off" />
+          <button id="generateCode" type="button">New code</button>
+        </div>
+        <label id="consentLabel" class="hidden">
+          <input type="checkbox" id="consentCheckbox" />
+          Do you want to be visible to this group while the app is open?
+        </label>
+        <p id="groupError" class="hidden"></p>
+      </div>
+
       <button id="enterMap">Mischief Managed.</button>
     </div>
   </div>
@@ -71,6 +88,12 @@
   <div id="mischiefToast" aria-hidden="true">Mischief Managed.</div>
   <div id="mischiefFull" aria-hidden="true">Mischief Managed.</div>
 
+  <!-- Who's currently visible in your group -->
+  <div id="memberList" class="hidden">
+    <button id="memberListToggle" type="button">0 in group</button>
+    <ul id="memberListItems"></ul>
+  </div>
+
   <!-- Parchment-styled marker naming, replaces native prompt() -->
   <div id="markerModal" class="modalOverlay">
     <div class="modalCard">
@@ -83,6 +106,7 @@
     </div>
   </div>
 
+  <script src="presence.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

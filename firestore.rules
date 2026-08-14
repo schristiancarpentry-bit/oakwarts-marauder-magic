@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // A "room" is just a path segment — there is no document listing every
+    // room, so you can only ever read/write one if you already know its
+    // code. Not cryptographic security, but matches the friends-pilot
+    // threat model this was scoped for (see project memory).
+    match /rooms/{roomCode}/marauders/{memberId} {
+      allow read: if true;
+      allow delete: if true;
+
+      allow write: if request.resource.data.keys().hasOnly(['name', 'lat', 'lon', 'updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.lat is number
+        && request.resource.data.lat >= -90 && request.resource.data.lat <= 90
+        && request.resource.data.lon is number
+        && request.resource.data.lon >= -180 && request.resource.data.lon <= 180
+        // Forces the client to use serverTimestamp() rather than a
+        // client-supplied value, so staleness checks can't be spoofed.
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

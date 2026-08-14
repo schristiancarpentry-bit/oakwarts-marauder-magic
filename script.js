@@ -15,6 +15,30 @@ const parchmentFrame = document.getElementById("parchmentFrame");
 const titleBanner = document.getElementById("titleBanner");
 const compassRose = document.getElementById("compassRose");
 const mischiefToast = document.getElementById("mischiefToast");
+const groupCodeInput = document.getElementById("groupCode");
+const generateCodeBtn = document.getElementById("generateCode");
+const consentLabel = document.getElementById("consentLabel");
+const consentCheckbox = document.getElementById("consentCheckbox");
+const groupError = document.getElementById("groupError");
+
+// Consent only matters if a group code is actually entered — with no
+// code, you're just navigating solo, nothing is shared with anyone.
+groupCodeInput.addEventListener("input", () => {
+  const hasCode = groupCodeInput.value.trim().length > 0;
+  consentLabel.classList.toggle("hidden", !hasCode);
+  if (!hasCode) consentCheckbox.checked = false;
+  groupError.classList.add("hidden");
+});
+generateCodeBtn.addEventListener("click", () => {
+  groupCodeInput.value = generateGroupCode();
+  groupCodeInput.dispatchEvent(new Event("input"));
+});
+
+// Member list expand/collapse
+const memberListToggleBtn = document.getElementById("memberListToggle");
+memberListToggleBtn.addEventListener("click", () => {
+  document.getElementById("memberList").classList.toggle("expanded");
+});
 
 // Step 1: enter name
 function proceedToOath() {
@@ -31,11 +55,26 @@ function proceedToOath() {
 
 // Step 2: Mischief Managed → reveal map with ripple
 function startMap(event) {
+  // A group code with no consent ticked is refused outright — sharing
+  // location only ever happens with an explicit, fresh "yes" each time.
+  const groupCode = groupCodeInput.value.trim();
+  if (groupCode && !consentCheckbox.checked) {
+    groupError.textContent = "Tick the box to share your location with this group, or clear the code to explore alone.";
+    groupError.classList.remove("hidden");
+    return;
+  }
+
   marauderNameValue =
     nameInput.value.trim() ||
     localStorage.getItem("marauderName") ||
     "Unknown Marauder";
   localStorage.setItem("marauderName", marauderNameValue);
+
+  if (groupCode) {
+    joinRoom(groupCode);
+  } else {
+    leaveRoomCompletely();
+  }
 
   const ripple = document.getElementById("rippleEffect");
   const mapEl = document.getElementById("map");
@@ -87,6 +126,8 @@ const exitButton = document.getElementById("exitButton");
 const mischiefFull = document.getElementById("mischiefFull");
 
 function closeMap() {
+  leaveRoomCompletely();
+
   const mapEl = document.getElementById("map");
   const rect = exitButton.getBoundingClientRect();
   const x = rect.left + rect.width / 2;
@@ -129,6 +170,11 @@ function closeMap() {
     compassRose.classList.remove("show");
     mischiefFull.classList.remove("show");
 
+    // Consent is asked fresh every time, never silently carried over —
+    // the group code can stay pre-filled for convenience, but the tick
+    // itself resets so reopening always requires an explicit new "yes".
+    consentCheckbox.checked = false;
+
     // Bring the blank oath parchment back, ready to reopen.
     scrollReveal.style.display = "";
   }, 1450);
@@ -164,6 +210,18 @@ function setMarauderMode(on) {
   document.body.classList.toggle("plainMode", !on);
   modeToggleBtn.textContent = on ? "Reveal Real Map" : "Marauder Mode";
   modeToggleBtn.classList.toggle("active", on);
+
+  // This toggle IS the privacy switch for the friend-presence feature —
+  // switching off stops both sending your position and receiving
+  // friends', not just hiding them visually. Switching back on resumes
+  // the same room, no need to re-enter the code.
+  if (currentRoomCode) {
+    if (on) {
+      startRoomListener(currentRoomCode);
+    } else {
+      pauseRoomListener();
+    }
+  }
 
   // Closing half of the film's ritual phrase pair — the oath reveals
   // the map, "Mischief Managed" is the flourish for hiding it again.
@@ -345,6 +403,10 @@ if (navigator.geolocation) {
         const labelDiv = nameLabel.getElement();
         if (labelDiv) labelDiv.innerHTML = `<div class="marauderNameLabel">${currentName}</div>`;
       }
+
+      // Share position with the group only while Marauder Mode is on —
+      // writeMyPosition() itself no-ops if no room has been joined.
+      if (marauderOn) writeMyPosition(lat, lon, currentName);
     },
     err => {
       console.error("GPS error:", err);

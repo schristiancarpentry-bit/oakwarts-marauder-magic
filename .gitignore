@@ -3,3 +3,6 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify
+
+# Firebase CLI debug output
+firebase-debug.log

@@ -179,6 +179,111 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   transform: scale(1.05);
 }
 
+.hidden {
+  display: none !important;
+}
+
+/* =========================================
+   GROUP CODE + CONSENT (oath step)
+========================================= */
+#groupSection {
+  margin: 0.4rem 0 1.1rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink-dark);
+  text-align: left;
+  max-width: 22rem;
+}
+#groupSection label[for="groupCode"] {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+  opacity: 0.85;
+}
+#groupCodeRow {
+  display: flex;
+  gap: 0.5rem;
+}
+#groupCode {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--parchment-brown);
+  border-radius: 6px;
+  background: rgba(255, 255, 240, 0.8);
+}
+#generateCode {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  background: transparent;
+  border: 1px solid var(--parchment-brown);
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  color: var(--ink-dark);
+}
+#generateCode:hover {
+  background: rgba(122, 94, 42, 0.15);
+}
+#consentLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+#consentLabel input {
+  margin-top: 0.2rem;
+}
+#groupError {
+  color: var(--ink-red);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
+/* =========================================
+   MEMBER LIST — who's currently in your group
+========================================= */
+#memberList {
+  position: fixed;
+  bottom: max(26px, calc(env(safe-area-inset-bottom) + 26px));
+  right: 26px;
+  z-index: 1100;
+  font-family: var(--font-body);
+}
+#memberListToggle {
+  background: var(--ink-main);
+  color: #fffaf0;
+  border: none;
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  box-shadow: 0 0 8px rgba(43, 29, 16, 0.5);
+}
+#memberListItems {
+  display: none;
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0.5rem 0.9rem;
+  background: rgba(255, 248, 225, 0.95);
+  border: 1px solid var(--parchment-brown);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--ink-dark);
+  max-height: 40vh;
+  overflow-y: auto;
+}
+#memberList.expanded #memberListItems {
+  display: block;
+}
+#memberListItems li {
+  padding: 2px 0;
+}
+
 /* Leaflet gives every divIcon a white box + grey border by default —
    all of our markers are custom-styled, so strip that off. */
 .leaflet-div-icon {
@@ -208,6 +313,14 @@ body.plainMode .marauderNameLabel {
   font-family: var(--font-body);
   font-size: 0.95rem;
   box-shadow: none;
+}
+
+/* Friend markers reuse .marauderNameLabel's ribbon styling exactly,
+   just without the ink-reveal-in animation — presence.js drives their
+   opacity directly based on staleness instead. */
+.friendLabel {
+  animation: none;
+  opacity: 1;
 }
 
 /* =========================================
