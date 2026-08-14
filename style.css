@@ -340,7 +340,8 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 ========================================= */
 #memberList {
   position: fixed;
-  bottom: max(26px, calc(env(safe-area-inset-bottom) + 26px));
+  /* Stacked above #modeToggle, which now also lives bottom-right. */
+  bottom: max(82px, calc(env(safe-area-inset-bottom) + 82px));
   right: 26px;
   z-index: 1100;
   font-family: var(--font-body);
@@ -509,11 +510,11 @@ body.plainMode .marauderNameLabel {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 6px;
-  height: 11px;
-  background: #f2e6c4;
-  border: 1px solid rgba(43, 29, 16, 0.55);
-  box-shadow: 0 0 1.5px rgba(0, 0, 0, 0.25);
+  width: 8px;
+  height: 14px;
+  background: #f7ecd0;
+  border: 1.5px solid rgba(30, 20, 10, 0.85);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
   clip-path: polygon(
     50% 0%, 72% 3%, 88% 14%, 96% 30%,
     92% 44%, 78% 52%, 68% 58%, 74% 68%,
@@ -523,7 +524,7 @@ body.plainMode .marauderNameLabel {
     4% 30%, 12% 14%, 28% 3%
   );
 }
-.foot-left { transform: translate(-6px, -55%) rotate(-12deg); }
+.foot-left { transform: translate(-7px, -55%) rotate(-12deg); }
 .foot-right { transform: translate(1px, -45%) rotate(12deg); }
 
 /* =========================================
@@ -554,7 +555,7 @@ body.plainMode .marauderNameLabel {
 ========================================= */
 #modeToggle {
   position: fixed;
-  top: max(30px, calc(env(safe-area-inset-top) + 26px));
+  bottom: max(26px, calc(env(safe-area-inset-bottom) + 26px));
   right: 26px;
   background: var(--ink-red);
   color: #fffaf0;
@@ -626,7 +627,8 @@ body.plainMode .marauderNameLabel {
    the closing half of the film's ritual phrase pair. */
 #mischiefToast {
   position: fixed;
-  top: max(70px, calc(env(safe-area-inset-top) + 66px));
+  /* Sits above #modeToggle, which now lives bottom-right too. */
+  bottom: max(140px, calc(env(safe-area-inset-bottom) + 140px));
   right: 26px;
   z-index: 1100;
   pointer-events: none;
@@ -639,7 +641,7 @@ body.plainMode .marauderNameLabel {
   padding: 2px 16px;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.25);
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(6px);
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 #mischiefToast.show {
@@ -743,8 +745,8 @@ body.plainMode #titleBanner.show {
 }
 #titleSub {
   font-family: var(--font-hand);
-  font-weight: 600;
-  font-size: clamp(0.85rem, 2.3vw, 1.1rem);
+  font-weight: 700;
+  font-size: clamp(1rem, 2.8vw, 1.35rem);
   color: var(--ink-main-soft);
   margin-top: -6px;
 }

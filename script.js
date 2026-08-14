@@ -589,6 +589,14 @@ const NPC_SPAWN_MIN_M = 100; // never spawn closer than this to you — stops th
 const NPC_SPAWN_SPREAD_M = 400; // scattered out to roughly this far, so zooming out reveals more of them
 const NPC_WANDER_RADIUS_M = 45; // how far each one roams from ITS OWN spot once placed — local, not a march toward you or anyone else
 
+// Harry, Ron and Hermione always show up together — clearly "up to
+// something" — rather than being left to the same random chance as
+// everyone else in NPC_ROSTER. They spawn as a tight cluster and
+// actively stick close to each other as they wander.
+const TRIO_NAMES = ["Harry Potter", "Ron Weasley", "Hermione Granger"];
+const NPC_TRIO_SPAWN_SPREAD_M = 12; // how close together they spawn
+const NPC_TRIO_COHESION_RADIUS_M = 25; // drift further than this from the group and you head back
+
 let npcs = []; // { name, pin, label, lat, lon, homeLat, homeLon }
 let npcInterval = null;
 
@@ -597,6 +605,34 @@ function metersToDegLat(m) {
 }
 function metersToDegLon(m, atLat) {
   return m / (111320 * Math.cos((atLat * Math.PI) / 180));
+}
+
+// Creates one NPC marker (dot + label) at a given point and adds it to
+// the npcs array. Shared by the general roster and the trio spawn below.
+function spawnOneNpc(name, lat, lon) {
+  // A plain divIcon (not L.circleMarker) so it moves via CSS transform
+  // like everything else on the map — that's what lets .npcMoving's
+  // CSS transition smooth each step into a glide instead of a snap.
+  const dotIcon = L.divIcon({
+    className: "npcMoving",
+    html: '<div class="npcDot"></div>',
+    iconSize: [10, 10],
+    iconAnchor: [5, 5]
+  });
+  const pin = L.marker([lat, lon], { icon: dotIcon, interactive: false }).addTo(map);
+
+  const labelIcon = L.divIcon({
+    className: "npcLabelIcon npcMoving",
+    html: `<div class="mapLabelWrap"><div class="marauderNameLabel npcLabel">${name}</div></div>`,
+    iconSize: [0, 0],
+    iconAnchor: [0, 40]
+  });
+  const label = L.marker([lat, lon], { icon: labelIcon, interactive: false }).addTo(map);
+
+  // "Home" is THIS character's own spawn spot, not your position —
+  // otherwise the wander-back logic below would pull every one of
+  // them toward you instead of letting them roam their own patch.
+  npcs.push({ name, pin, label, lat, lon, homeLat: lat, homeLon: lon });
 }
 
 function spawnNpcs() {
@@ -615,30 +651,22 @@ function spawnNpcs() {
     const dist = NPC_SPAWN_MIN_M + Math.random() * NPC_SPAWN_SPREAD_M;
     const lat = center.lat + metersToDegLat(Math.cos(angle) * dist);
     const lon = center.lng + metersToDegLon(Math.sin(angle) * dist, center.lat);
+    spawnOneNpc(name, lat, lon);
+  });
 
-    // A plain divIcon (not L.circleMarker) so it moves via CSS transform
-    // like everything else on the map — that's what lets .npcMoving's
-    // CSS transition smooth each step into a glide instead of a snap.
-    const dotIcon = L.divIcon({
-      className: "npcMoving",
-      html: '<div class="npcDot"></div>',
-      iconSize: [10, 10],
-      iconAnchor: [5, 5]
-    });
-    const pin = L.marker([lat, lon], { icon: dotIcon, interactive: false }).addTo(map);
+  // The trio: one shared spawn point, each of the three placed a few
+  // metres from it — always present, always clustered together.
+  const trioAngle = Math.random() * Math.PI * 2;
+  const trioDist = NPC_SPAWN_MIN_M + Math.random() * NPC_SPAWN_SPREAD_M;
+  const trioLat = center.lat + metersToDegLat(Math.cos(trioAngle) * trioDist);
+  const trioLon = center.lng + metersToDegLon(Math.sin(trioAngle) * trioDist, center.lat);
 
-    const labelIcon = L.divIcon({
-      className: "npcLabelIcon npcMoving",
-      html: `<div class="mapLabelWrap"><div class="marauderNameLabel npcLabel">${name}</div></div>`,
-      iconSize: [0, 0],
-      iconAnchor: [0, 40]
-    });
-    const label = L.marker([lat, lon], { icon: labelIcon, interactive: false }).addTo(map);
-
-    // "Home" is THIS character's own spawn spot, not your position —
-    // otherwise the wander-back logic below would pull every one of
-    // them toward you instead of letting them roam their own patch.
-    npcs.push({ name, pin, label, lat, lon, homeLat: lat, homeLon: lon });
+  TRIO_NAMES.forEach(name => {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * NPC_TRIO_SPAWN_SPREAD_M;
+    const lat = trioLat + metersToDegLat(Math.cos(angle) * dist);
+    const lon = trioLon + metersToDegLon(Math.sin(angle) * dist, trioLat);
+    spawnOneNpc(name, lat, lon);
   });
 
   npcInterval = setInterval(stepNpcs, NPC_STEP_MS);
@@ -662,6 +690,24 @@ function stepNpcs() {
       );
       if (distFromSnapeM < NPC_SNAPE_AVOID_RADIUS_M) {
         angle = Math.atan2(npc.lon - snape.lon, npc.lat - snape.lat) + (Math.random() - 0.5) * 0.8;
+      }
+    }
+
+    // Harry, Ron and Hermione stick together — if this one's drifted
+    // too far from the other two, head back toward them instead of
+    // wandering off solo.
+    if (angle === undefined && TRIO_NAMES.includes(npc.name)) {
+      const others = npcs.filter(n => TRIO_NAMES.includes(n.name) && n !== npc);
+      if (others.length) {
+        const groupLat = others.reduce((sum, n) => sum + n.lat, 0) / others.length;
+        const groupLon = others.reduce((sum, n) => sum + n.lon, 0) / others.length;
+        const distFromGroupM = Math.hypot(
+          (npc.lat - groupLat) * 111320,
+          (npc.lon - groupLon) * 111320 * Math.cos((npc.lat * Math.PI) / 180)
+        );
+        if (distFromGroupM > NPC_TRIO_COHESION_RADIUS_M) {
+          angle = Math.atan2(groupLon - npc.lon, groupLat - npc.lat) + (Math.random() - 0.5) * 0.6;
+        }
       }
     }
 
