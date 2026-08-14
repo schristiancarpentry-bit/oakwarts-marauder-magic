@@ -272,8 +272,9 @@ function addMarkerAndLabel(lat, lon, name) {
 
   const labelIcon = L.divIcon({
     className: "placeLabelIcon",
-    html: `<span class="placeLabelText">${name}</span>`,
-    iconSize: [120, 24]
+    html: `<div class="mapLabelWrap"><span class="placeLabelText">${name}</span></div>`,
+    iconSize: [0, 0],
+    iconAnchor: [0, 12]
   });
 
   const label = L.marker([lat, lon], { icon: labelIcon, interactive: false });
@@ -393,12 +394,15 @@ if (navigator.geolocation) {
           fillOpacity: 0.9
         }).addTo(map);
 
-        // add marauder's name label
+        // add marauder's name label — iconSize [0,0] lets the wrapper
+        // collapse to a point; the label sizes to its own text and
+        // centers itself via CSS (.mapLabelWrap), so long names grow
+        // the tag instead of overflowing or drifting off-centre.
         const nameIcon = L.divIcon({
           className: "marauderNameIcon",
-          html: `<div class="marauderNameLabel">${currentName}</div>`,
-          iconSize: [120, 24],
-          iconAnchor: [60, 40]
+          html: `<div class="mapLabelWrap"><div class="marauderNameLabel">${currentName}</div></div>`,
+          iconSize: [0, 0],
+          iconAnchor: [0, 40]
         });
 
         nameLabel = L.marker([lat, lon], { icon: nameIcon, interactive: false }).addTo(map);
@@ -419,7 +423,7 @@ if (navigator.geolocation) {
 
         // update the name text in case it changed
         const labelDiv = nameLabel.getElement();
-        if (labelDiv) labelDiv.innerHTML = `<div class="marauderNameLabel">${currentName}</div>`;
+        if (labelDiv) labelDiv.innerHTML = `<div class="mapLabelWrap"><div class="marauderNameLabel">${currentName}</div></div>`;
       }
 
       // Share position with the group only while Marauder Mode is on —

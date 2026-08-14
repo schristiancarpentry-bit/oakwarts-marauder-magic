@@ -107,9 +107,9 @@ function renderFriends(friends) {
 
       const labelIcon = L.divIcon({
         className: "friendLabelIcon",
-        html: `<div class="marauderNameLabel friendLabel">${f.name}</div>`,
-        iconSize: [120, 24],
-        iconAnchor: [60, 40]
+        html: `<div class="mapLabelWrap"><div class="marauderNameLabel friendLabel">${f.name}</div></div>`,
+        iconSize: [0, 0],
+        iconAnchor: [0, 40]
       });
       const label = L.marker([f.lat, f.lon], { icon: labelIcon, interactive: false }).addTo(map);
       friendMarkers[f.id] = { pin, label };
@@ -117,7 +117,7 @@ function renderFriends(friends) {
       friendMarkers[f.id].pin.setLatLng([f.lat, f.lon]);
       friendMarkers[f.id].label.setLatLng([f.lat, f.lon]);
       const labelDiv = friendMarkers[f.id].label.getElement();
-      if (labelDiv) labelDiv.innerHTML = `<div class="marauderNameLabel friendLabel">${f.name}</div>`;
+      if (labelDiv) labelDiv.innerHTML = `<div class="mapLabelWrap"><div class="marauderNameLabel friendLabel">${f.name}</div></div>`;
     }
 
     friendMarkers[f.id].pin.setStyle({ opacity, fillOpacity: opacity * 0.9 });

@@ -294,11 +294,26 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 /* =========================================
    FLOATING NAME LABEL (you, on the map)
 ========================================= */
+/* Wraps every map name/place tag. The tag itself (.marauderNameLabel /
+   .placeLabelText) sizes to its own text via white-space:nowrap, and
+   this wrapper centres it on the marker point regardless of how wide
+   that ends up being — so a long "First Surname" grows the tag instead
+   of overflowing a fixed box or drifting off-centre. iconSize is set to
+   [0,0] on the Leaflet icon wherever this is used, so this is the only
+   thing positioning the tag horizontally. */
+.mapLabelWrap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translateX(-50%);
+}
+
 .marauderNameLabel {
   font-family: var(--font-hand);
   font-size: 1.5rem;
   color: var(--ink-main);
   background: rgba(255, 248, 225, 0.92);
+  border: 1.5px solid var(--parchment-brown);
   clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
   padding: 2px 16px;
   text-align: center;
@@ -332,8 +347,11 @@ body.plainMode .marauderNameLabel {
   color: var(--ink-main);
   text-shadow: 0 0 3px rgba(255,255,255,0.7);
   background: rgba(255,248,225,0.9);
+  border: 1.5px solid var(--parchment-brown);
   clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
   padding: 1px 12px;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 /* Wax-seal marker pins, replacing Leaflet's default blue teardrop —
