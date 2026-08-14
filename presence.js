@@ -183,13 +183,15 @@ function sanitizeCode(code) {
   return code.trim().toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 40);
 }
 
-// Joins a fresh room, replacing whatever was joined before.
+// Joins a fresh room, replacing whatever was joined before. Deliberately
+// does NOT start listening here — the map opens plain, so friends only
+// appear once Marauder Mode is actually switched on (see setMarauderMode
+// in script.js, which starts/stops the listener based on currentRoomCode).
 function joinRoom(code) {
   leaveRoomCompletely();
   currentRoomCode = sanitizeCode(code);
   if (!currentRoomCode) return; // nothing left after sanitizing — treat as solo
   myMemberId = randomMemberId();
-  startRoomListener(currentRoomCode);
 }
 
 // Fully leaves the room: stops listening, deletes your own presence

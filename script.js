@@ -54,6 +54,46 @@ memberListToggleBtn.addEventListener("click", () => {
   document.getElementById("memberList").classList.toggle("expanded");
 });
 
+// Parchment/ink/gold — kept consistent with the rest of the theme
+// rather than generic rainbow confetti.
+const CONFETTI_COLORS = ["#ffd700", "#d9a24a", "#f5ecd7", "#6e1f16", "#2b1d10"];
+
+// A circular "wand tap" burst centred on a screen point. canvas-confetti
+// takes fractional viewport coordinates (0-1), not pixels.
+function fireConfetti(x, y) {
+  if (typeof confetti !== "function") return; // CDN blocked/offline — fail quietly
+  confetti({
+    particleCount: 90,
+    spread: 360,
+    startVelocity: 32,
+    ticks: 90,
+    gravity: 0.9,
+    scalar: 0.9,
+    colors: CONFETTI_COLORS,
+    origin: { x: x / window.innerWidth, y: y / window.innerHeight }
+  });
+}
+
+// Plays the ink ripple growing outward from a point without touching
+// the map's own clip-path reveal — used for the Marauder Mode toggle,
+// where the map is already visible and only the *style* is changing.
+function fireInkRippleAt(x, y) {
+  const ripple = document.getElementById("rippleEffect");
+  ripple.style.transition = "none";
+  ripple.style.top = `${y}px`;
+  ripple.style.left = `${x}px`;
+  ripple.style.width = "0";
+  ripple.style.height = "0";
+  ripple.style.opacity = "1";
+  void ripple.offsetWidth; // force layout so the reset above isn't animated
+  ripple.style.transition = "";
+  requestAnimationFrame(() => {
+    ripple.style.width = "200vw";
+    ripple.style.height = "200vw";
+    ripple.style.opacity = "0";
+  });
+}
+
 // Step 1: enter name
 function proceedToOath() {
   const firstName = nameInput.value.trim();
@@ -78,6 +118,11 @@ function startMap(event) {
     groupError.classList.remove("hidden");
     return;
   }
+
+  // Every open lands on the plain map, never carrying over Marauder
+  // Mode from a previous session (e.g. Exit -> reopen) — the enchanted
+  // view is always a deliberate press of the button, not a leftover state.
+  setMarauderMode(false);
 
   // The full "First Surname" was already decided back in Step 1 — reread
   // from storage rather than the raw first-name field, which would
@@ -104,6 +149,8 @@ function startMap(event) {
   ripple.style.width = "0";
   ripple.style.height = "0";
   ripple.style.opacity = "1";
+
+  fireConfetti(x, y);
 
   // Ink-blot reveal: the map is raised above the parchment and shown
   // only within a growing circle centred on the tap point, so the
@@ -165,6 +212,8 @@ function closeMap() {
   void ripple.offsetWidth; // force layout so the snap above isn't animated
   ripple.style.transition = "";
 
+  fireConfetti(x, y);
+
   mapEl.style.setProperty("--tap-x", `${x}px`);
   mapEl.style.setProperty("--tap-y", `${y}px`);
   mapEl.classList.add("revealing", "inkReveal"); // clip-path: circle(150%) — visually identical to unclipped, no jump
@@ -218,7 +267,10 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 // -----------------------------
 // Marauder Mode toggle (enchanted parchment view <-> plain real map)
 // -----------------------------
-let marauderOn = true; // you've just sworn the oath, so it starts active
+// The map opens PLAIN — the oath gets you in, but the enchanted view
+// itself is behind the Marauder Mode button, like tapping a wand to
+// activate the real map rather than something that's just always on.
+let marauderOn = false;
 const modeToggleBtn = document.getElementById("modeToggle");
 let mischiefTimer = null;
 
@@ -228,6 +280,17 @@ function setMarauderMode(on) {
   document.body.classList.toggle("plainMode", !on);
   modeToggleBtn.textContent = on ? "Reveal Real Map" : "Marauder Mode";
   modeToggleBtn.classList.toggle("active", on);
+
+  // The wand-tap moment: switching plain -> enchanted gets the same ink
+  // ripple + confetti burst as opening the map in the first place,
+  // centred on the button rather than a random tap point.
+  if (!wasOn && on) {
+    const rect = modeToggleBtn.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    fireInkRippleAt(x, y);
+    fireConfetti(x, y);
+  }
 
   // This toggle IS the privacy switch for the friend-presence feature —
   // switching off stops both sending your position and receiving
@@ -250,7 +313,7 @@ function setMarauderMode(on) {
   }
 }
 modeToggleBtn.addEventListener("click", () => setMarauderMode(!marauderOn));
-setMarauderMode(true);
+setMarauderMode(false);
 
 // -----------------------------
 // Saved markers from localStorage
@@ -409,13 +472,16 @@ if (navigator.geolocation) {
 
         setTimeout(() => map.setView([lat, lon], 18), 500);
       } else {
-        // footfall trail, replacing the old plain dot trail
-        const prev = userMarker.getLatLng();
-        const jitterLat = prev.lat + (Math.random() - 0.5) * 0.00003;
-        const jitterLon = prev.lng + (Math.random() - 0.5) * 0.00003;
-        const bearingDeg = bearingBetween(prev.lat, prev.lng, lat, lon);
-
-        dropFootprint(jitterLat, jitterLon, bearingDeg);
+        // footfall trail, replacing the old plain dot trail — only
+        // while Marauder Mode is on, since footprints are part of the
+        // magic, not something a plain accurate map should show.
+        if (marauderOn) {
+          const prev = userMarker.getLatLng();
+          const jitterLat = prev.lat + (Math.random() - 0.5) * 0.00003;
+          const jitterLon = prev.lng + (Math.random() - 0.5) * 0.00003;
+          const bearingDeg = bearingBetween(prev.lat, prev.lng, lat, lon);
+          dropFootprint(jitterLat, jitterLon, bearingDeg);
+        }
 
         // update position + label text live
         userMarker.setLatLng([lat, lon]);

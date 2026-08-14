@@ -59,7 +59,12 @@ body {
 
 /* Enchanted parchment treatment for the map tiles — this is what makes
    plain OpenStreetMap read as an old hand-inked map. Switched off in
-   "plain map" mode for real-world navigation. */
+   "plain map" mode for real-world navigation. Transition lives on the
+   base rule (not the conditional one) so it applies smoothly in BOTH
+   directions when Marauder Mode is toggled, not just a hard cut. */
+#map .leaflet-tile-pane {
+  transition: filter 1s ease;
+}
 body:not(.plainMode) #map .leaflet-tile-pane {
   filter: sepia(0.75) saturate(1.1) hue-rotate(-8deg) contrast(1.3) brightness(0.95);
 }
