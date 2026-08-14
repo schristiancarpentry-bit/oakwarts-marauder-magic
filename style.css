@@ -661,6 +661,14 @@ body.plainMode #titleBanner.show {
   color: var(--ink-main-soft);
   margin-top: -6px;
 }
+#titleCredit {
+  font-family: var(--font-hand);
+  font-weight: 600;
+  font-size: clamp(0.7rem, 1.9vw, 0.9rem);
+  color: var(--ink-main-soft);
+  opacity: 0.75;
+  margin-top: -2px;
+}
 
 #compassRose {
   position: fixed;
