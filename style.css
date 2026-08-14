@@ -10,7 +10,10 @@
   --ink-red-light: #9c3b2c;
   --font-display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
   --font-body: 'IM Fell English', Georgia, serif;
-  --font-hand: 'Mrs Saint Delafield', 'Segoe Script', cursive;
+  /* Was 'Mrs Saint Delafield' — beautiful but too thin/ornate to read
+     at map-label size. Dancing Script keeps the cursive-ink feel with
+     much clearer letterforms. */
+  --font-hand: 'Dancing Script', 'Segoe Script', cursive;
   --font-title: 'Pirata One', var(--font-display);
 }
 
@@ -315,6 +318,7 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 
 .marauderNameLabel {
   font-family: var(--font-hand);
+  font-weight: 600;
   font-size: 1.5rem;
   color: var(--ink-main);
   background: rgba(255, 248, 225, 0.92);
@@ -353,12 +357,29 @@ body.plainMode .marauderNameLabel {
   font-style: italic;
   border-style: dashed;
 }
+.npcDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #8a6238;
+  border: 1px solid #6e1f16;
+  opacity: 0.75;
+}
+/* Leaflet moves markers via a CSS transform set inline — adding a
+   transition here still smooths every setLatLng() into a glide rather
+   than a snap, since transitions fire on inline style changes too.
+   Slightly under the step interval (see NPC_STEP_MS in script.js) so
+   one glide finishes just before the next one starts. */
+.npcMoving {
+  transition: transform 2.8s linear;
+}
 
 /* =========================================
    PLACE LABELS FOR MARAUDER MODE
 ========================================= */
 .placeLabelText {
   font-family: var(--font-hand);
+  font-weight: 600;
   font-size: 1.05rem;
   color: var(--ink-main);
   text-shadow: 0 0 3px rgba(255,255,255,0.7);
@@ -502,6 +523,7 @@ body.plainMode .marauderNameLabel {
   justify-content: center;
   pointer-events: none;
   font-family: var(--font-hand);
+  font-weight: 700;
   font-size: clamp(2.2rem, 9vw, 4.5rem);
   color: var(--ink-main);
   text-align: center;
@@ -522,6 +544,7 @@ body.plainMode .marauderNameLabel {
   z-index: 1100;
   pointer-events: none;
   font-family: var(--font-hand);
+  font-weight: 600;
   font-size: 1.3rem;
   color: var(--ink-main);
   background: rgba(255, 248, 225, 0.92);
@@ -633,6 +656,7 @@ body.plainMode #titleBanner.show {
 }
 #titleSub {
   font-family: var(--font-hand);
+  font-weight: 600;
   font-size: clamp(0.85rem, 2.3vw, 1.1rem);
   color: var(--ink-main-soft);
   margin-top: -6px;

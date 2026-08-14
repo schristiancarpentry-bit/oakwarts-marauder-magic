@@ -506,16 +506,19 @@ function spawnNpcs() {
     const lat = center.lat + metersToDegLat(Math.cos(angle) * dist);
     const lon = center.lng + metersToDegLon(Math.sin(angle) * dist, center.lat);
 
-    const pin = L.circleMarker([lat, lon], {
-      radius: 5,
-      color: "#6e1f16",
-      fillColor: "#8a6238",
-      fillOpacity: 0.7,
-      opacity: 0.7
-    }).addTo(map);
+    // A plain divIcon (not L.circleMarker) so it moves via CSS transform
+    // like everything else on the map — that's what lets .npcMoving's
+    // CSS transition smooth each step into a glide instead of a snap.
+    const dotIcon = L.divIcon({
+      className: "npcMoving",
+      html: '<div class="npcDot"></div>',
+      iconSize: [10, 10],
+      iconAnchor: [5, 5]
+    });
+    const pin = L.marker([lat, lon], { icon: dotIcon, interactive: false }).addTo(map);
 
     const labelIcon = L.divIcon({
-      className: "npcLabelIcon",
+      className: "npcLabelIcon npcMoving",
       html: `<div class="mapLabelWrap"><div class="marauderNameLabel npcLabel">${name}</div></div>`,
       iconSize: [0, 0],
       iconAnchor: [0, 40]
