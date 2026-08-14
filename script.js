@@ -179,10 +179,23 @@ function runSorting() {
   // Reset in case someone's been Sorted before this session (Exit -> reopen).
   sortingHat.classList.remove("decided");
   sortingStatus.classList.remove("hidden");
-  sortingStatus.textContent = "Hmm... let me think...";
   sortingResult.classList.add("hidden");
   continueSortingBtn.classList.add("hidden");
-  speakAsHat("Hmm. Let me think.");
+
+  // A staggered "Hmmmm... Hmmmm... I've got it!" build-up rather than
+  // one flat line — longer suspense before the reveal.
+  sortingStatus.textContent = "Hmmmm...";
+  speakAsHat("Hmmmm.");
+
+  setTimeout(() => {
+    sortingStatus.textContent = "Hmmmm...";
+    speakAsHat("Hmmmm.");
+  }, 1600);
+
+  setTimeout(() => {
+    sortingStatus.textContent = "I've got it!";
+    speakAsHat("I've got it!");
+  }, 3400);
 
   setTimeout(() => {
     marauderHouse = randomHouse();
@@ -199,7 +212,7 @@ function runSorting() {
 
     const rect = sortingHat.getBoundingClientRect();
     fireConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, [marauderHouse.color, marauderHouse.accent, "#f5ecd7"]);
-  }, 3300);
+  }, 4800);
 }
 
 continueSortingBtn.addEventListener("click", () => {
