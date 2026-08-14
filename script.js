@@ -199,7 +199,7 @@ function runSorting() {
 
     const rect = sortingHat.getBoundingClientRect();
     fireConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, [marauderHouse.color, marauderHouse.accent, "#f5ecd7"]);
-  }, 1800);
+  }, 3300);
 }
 
 continueSortingBtn.addEventListener("click", () => {
