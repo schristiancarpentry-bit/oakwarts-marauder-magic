@@ -480,11 +480,15 @@ function dropFootprint(lat, lon, bearingDeg) {
 // -----------------------------
 const NPC_ROSTER = [
   "Dobby", "Hagrid", "Luna Lovegood", "Peeves", "Moaning Myrtle",
-  "Nearly Headless Nick", "Fang", "Professor McGonagall"
+  "Nearly Headless Nick", "Fang", "Professor McGonagall", "Filch",
+  "Madam Pomfrey", "Professor Flitwick", "Kreacher", "Winky",
+  "The Grey Lady", "The Fat Friar", "Professor Sprout"
 ];
-const NPC_COUNT = 4;
+const NPC_COUNT = 7;
 const NPC_STEP_MS = 3000; // how often each one takes a "step"
-const NPC_WANDER_RADIUS_M = 60; // roughly how far they roam from where they spawned
+const NPC_SPAWN_MIN_M = 100; // never spawn closer than this to you — stops them clustering around your dot
+const NPC_SPAWN_SPREAD_M = 400; // scattered out to roughly this far, so zooming out reveals more of them
+const NPC_WANDER_RADIUS_M = 45; // how far each one roams from ITS OWN spot once placed — local, not a march toward you or anyone else
 
 let npcs = []; // { name, pin, label, lat, lon, homeLat, homeLon }
 let npcInterval = null;
@@ -499,11 +503,17 @@ function metersToDegLon(m, atLat) {
 function spawnNpcs() {
   clearNpcs();
   const center = userMarker ? userMarker.getLatLng() : map.getCenter();
+  // A fresh shuffle + fresh angles/distances every single spawn (every
+  // Marauder Mode toggle-on) — genuinely randomised each time, not a
+  // fixed pattern, and never synced/visible to anyone else (see note
+  // in the surrounding comment block — this is purely local to your
+  // own screen, so there's nothing to "repeat" between different
+  // people even when several friends are in the same group).
   const chosen = [...NPC_ROSTER].sort(() => Math.random() - 0.5).slice(0, NPC_COUNT);
 
   chosen.forEach(name => {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 15 + Math.random() * NPC_WANDER_RADIUS_M;
+    const dist = NPC_SPAWN_MIN_M + Math.random() * NPC_SPAWN_SPREAD_M;
     const lat = center.lat + metersToDegLat(Math.cos(angle) * dist);
     const lon = center.lng + metersToDegLon(Math.sin(angle) * dist, center.lat);
 
@@ -526,7 +536,10 @@ function spawnNpcs() {
     });
     const label = L.marker([lat, lon], { icon: labelIcon, interactive: false }).addTo(map);
 
-    npcs.push({ name, pin, label, lat, lon, homeLat: center.lat, homeLon: center.lng });
+    // "Home" is THIS character's own spawn spot, not your position —
+    // otherwise the wander-back logic below would pull every one of
+    // them toward you instead of letting them roam their own patch.
+    npcs.push({ name, pin, label, lat, lon, homeLat: lat, homeLon: lon });
   });
 
   npcInterval = setInterval(stepNpcs, NPC_STEP_MS);
