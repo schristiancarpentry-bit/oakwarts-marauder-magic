@@ -162,8 +162,8 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
 }
 #sortingHat {
-  width: 90px;
-  height: 90px;
+  width: clamp(150px, 45vw, 220px);
+  height: clamp(150px, 45vw, 220px);
   margin: 0 auto 1rem;
   animation: hatThink 0.9s ease-in-out infinite;
 }

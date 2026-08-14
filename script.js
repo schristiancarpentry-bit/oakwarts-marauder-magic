@@ -159,6 +159,22 @@ function proceedToSorting() {
   }, 1000);
 }
 
+// Speaks a line as the Hat, using whatever voice the browser has —
+// no audio file to source, works immediately everywhere the Web
+// Speech API exists. Pitched down and slowed slightly for a more
+// "ancient talking hat" read than a flat default TTS voice.
+function speakAsHat(text) {
+  if (!("speechSynthesis" in window)) return; // unsupported browser — fail quietly
+  speechSynthesis.cancel(); // don't let two Sortings queue up and overlap
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 0.85;
+  utter.pitch = 0.55;
+  const voices = speechSynthesis.getVoices();
+  const preferred = voices.find(v => /male|david|daniel|george|arthur|ryan|guy/i.test(v.name));
+  if (preferred) utter.voice = preferred;
+  speechSynthesis.speak(utter);
+}
+
 function runSorting() {
   // Reset in case someone's been Sorted before this session (Exit -> reopen).
   sortingHat.classList.remove("decided");
@@ -166,6 +182,7 @@ function runSorting() {
   sortingStatus.textContent = "Hmm... let me think...";
   sortingResult.classList.add("hidden");
   continueSortingBtn.classList.add("hidden");
+  speakAsHat("Hmm. Let me think.");
 
   setTimeout(() => {
     marauderHouse = randomHouse();
@@ -178,6 +195,7 @@ function runSorting() {
     sortingFullName.textContent = marauderNameValue;
     sortingResult.classList.remove("hidden");
     continueSortingBtn.classList.remove("hidden");
+    speakAsHat(marauderHouse.name + "!");
 
     const rect = sortingHat.getBoundingClientRect();
     fireConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, [marauderHouse.color, marauderHouse.accent, "#f5ecd7"]);
