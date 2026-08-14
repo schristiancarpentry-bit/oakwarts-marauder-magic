@@ -47,6 +47,30 @@
     </div>
   </div>
 
+  <!-- Scroll 1.5 – The Sorting -->
+  <div id="scrollSorting">
+    <div id="scrollInnerSorting">
+      <div id="sortingHat" aria-hidden="true">
+        <!-- Drop your own hat image at assets/sorting-hat.png and it's
+             used automatically; until then this inline SVG placeholder
+             shows instead (falls back to it if the image 404s). -->
+        <img id="sortingHatImg" src="assets/sorting-hat.png" alt="The Sorting Hat"
+             onerror="this.style.display='none'; document.getElementById('sortingHatFallback').style.display='block';" />
+        <svg id="sortingHatFallback" viewBox="0 0 100 100" style="display:none">
+          <path d="M50 8 C40 30 15 55 10 82 C35 90 65 90 90 82 C85 55 60 30 50 8 Z" fill="#4a3826" stroke="#2b1d10" stroke-width="2" />
+          <ellipse cx="50" cy="82" rx="42" ry="9" fill="#3a2c1a" stroke="#2b1d10" stroke-width="2" />
+          <path d="M50 8 C46 20 55 35 47 48 C60 40 52 24 50 8 Z" fill="#2b1d10" opacity="0.5" />
+        </svg>
+      </div>
+      <h1 id="sortingStatus">Hmm... let me think...</h1>
+      <div id="sortingResult" class="hidden">
+        <p id="sortingHouseName"></p>
+        <p id="sortingFullName"></p>
+      </div>
+      <button id="continueSorting" class="hidden">Onward</button>
+    </div>
+  </div>
+
   <!-- Scroll 2 – Oath -->
   <div id="scrollReveal">
     <div id="scrollInner2">

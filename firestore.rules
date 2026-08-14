@@ -10,7 +10,7 @@ service cloud.firestore {
       allow read: if true;
       allow delete: if true;
 
-      allow write: if request.resource.data.keys().hasOnly(['name', 'lat', 'lon', 'updatedAt'])
+      allow write: if request.resource.data.keys().hasOnly(['name', 'lat', 'lon', 'updatedAt', 'house'])
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 40
@@ -20,7 +20,11 @@ service cloud.firestore {
         && request.resource.data.lon >= -180 && request.resource.data.lon <= 180
         // Forces the client to use serverTimestamp() rather than a
         // client-supplied value, so staleness checks can't be spoofed.
-        && request.resource.data.updatedAt == request.time;
+        && request.resource.data.updatedAt == request.time
+        // house is optional (added by the Sorting feature) — if present,
+        // must be a short string (a hex colour like "#740001").
+        && (!('house' in request.resource.data)
+            || (request.resource.data.house is string && request.resource.data.house.size() <= 12));
     }
 
     // Deny everything else by default.

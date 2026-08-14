@@ -135,6 +135,90 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 }
 
 /* =========================================
+   SCROLL 1.5 – THE SORTING
+========================================= */
+#scrollSorting {
+  position: fixed;
+  inset: 0;
+  background: url("assets/parchment.jpg") center/cover no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 1950;
+  opacity: 0;
+  pointer-events: none;
+}
+#scrollInnerSorting {
+  background: rgba(255, 248, 220, 0.85);
+  border: 2px solid var(--parchment-brown);
+  border-radius: 12px;
+  padding: 2rem 3rem;
+  max-width: min(90vw, 26rem);
+  box-sizing: border-box;
+  text-align: center;
+  font-family: var(--font-display);
+  color: var(--ink-dark);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
+#sortingHat {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 1rem;
+  animation: hatThink 0.9s ease-in-out infinite;
+}
+#sortingHat img,
+#sortingHat svg {
+  width: 100%;
+  height: 100%;
+}
+@keyframes hatThink {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+#sortingHat.decided {
+  animation: none;
+  transform: rotate(0deg);
+}
+#sortingStatus {
+  font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+  margin-bottom: 0.5rem;
+}
+#sortingResult {
+  margin-bottom: 1.2rem;
+}
+#sortingHouseName {
+  font-family: var(--font-title);
+  font-size: clamp(1.6rem, 6vw, 2.3rem);
+  margin: 0.2rem 0;
+  letter-spacing: 1px;
+  animation: inkFade 1s ease forwards;
+}
+#sortingFullName {
+  font-family: var(--font-hand);
+  font-weight: 600;
+  font-size: 1.3rem;
+  margin: 0.2rem 0;
+  color: var(--ink-main-soft);
+}
+#continueSorting {
+  font-family: var(--font-display);
+  background: var(--parchment-brown);
+  color: #fffaf0;
+  border: none;
+  padding: 0.6rem 1.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.05rem;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+}
+#continueSorting:hover {
+  background: #9c7b3b;
+  transform: scale(1.05);
+}
+
+/* =========================================
    SCROLL 2 – I SOLEMNLY SWEAR
 ========================================= */
 #scrollReveal {
@@ -322,7 +406,10 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   font-size: 1.5rem;
   color: var(--ink-main);
   background: rgba(255, 248, 225, 0.92);
-  border: 1.5px solid var(--parchment-brown);
+  /* --house-color is set inline per-marker once someone's been Sorted
+     (see script.js/presence.js); falls back to plain parchment-brown
+     for anyone who hasn't been through the Sorting yet. */
+  border: 1.5px solid var(--house-color, var(--parchment-brown));
   clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
   padding: 2px 16px;
   text-align: center;

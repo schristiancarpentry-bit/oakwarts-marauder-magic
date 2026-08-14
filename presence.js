@@ -105,9 +105,10 @@ function renderFriends(friends) {
         fillOpacity: 0.9
       }).addTo(map);
 
+      const houseStyle = f.house ? ` style="--house-color:${f.house}"` : "";
       const labelIcon = L.divIcon({
         className: "friendLabelIcon",
-        html: `<div class="mapLabelWrap"><div class="marauderNameLabel friendLabel">${f.name}</div></div>`,
+        html: `<div class="mapLabelWrap"><div class="marauderNameLabel friendLabel"${houseStyle}>${f.name}</div></div>`,
         iconSize: [0, 0],
         iconAnchor: [0, 40]
       });
@@ -153,6 +154,7 @@ function handleSnapshot(snapshot) {
       name: data.name || "Unknown Marauder",
       lat: data.lat,
       lon: data.lon,
+      house: typeof data.house === "string" ? data.house : null,
       stale: age > STALE_FADE_MS,
       hidden: age > STALE_HIDE_MS
     });
@@ -217,18 +219,22 @@ function leaveRoomCompletely() {
 }
 
 // Throttled position write — no-ops if no room is joined. Call this
-// from the GPS callback only while Marauder Mode is on.
-function writeMyPosition(lat, lon, name) {
+// from the GPS callback only while Marauder Mode is on. houseColor is
+// optional (a hex string like "#740001") — omitted if no Sorting has
+// happened yet this session.
+function writeMyPosition(lat, lon, name, houseColor) {
   if (!currentRoomCode || !myMemberId) return;
   const now = Date.now();
   if (now - lastWrittenAt < WRITE_THROTTLE_MS) return;
   lastWrittenAt = now;
-  roomRef(currentRoomCode).doc(myMemberId).set({
+  const payload = {
     name,
     lat,
     lon,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(err => console.error("Position write error:", err));
+  };
+  if (houseColor) payload.house = houseColor;
+  roomRef(currentRoomCode).doc(myMemberId).set(payload).catch(err => console.error("Position write error:", err));
 }
 
 // Best-effort cleanup if the tab is actually closed while still in a

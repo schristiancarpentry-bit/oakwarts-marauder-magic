@@ -18,6 +18,20 @@ function randomSurname() {
   return HP_SURNAMES[Math.floor(Math.random() * HP_SURNAMES.length)];
 }
 
+// The four houses. "color" is used everywhere (name-tag border,
+// confetti burst) — Hufflepuff's is deliberately darker than the real
+// house yellow (#FFDB00), which fails contrast against the cream
+// parchment background.
+const HOUSES = [
+  { name: "Gryffindor", color: "#740001", accent: "#d3a625" },
+  { name: "Slytherin", color: "#1a472a", accent: "#8a8a8a" },
+  { name: "Hufflepuff", color: "#8a6d00", accent: "#2b1d10" },
+  { name: "Ravenclaw", color: "#0e1a40", accent: "#946b2d" }
+];
+function randomHouse() {
+  return HOUSES[Math.floor(Math.random() * HOUSES.length)];
+}
+
 // References
 const scrollIntro = document.getElementById("scrollIntro");
 const scrollReveal = document.getElementById("scrollReveal");
@@ -59,8 +73,10 @@ memberListToggleBtn.addEventListener("click", () => {
 const CONFETTI_COLORS = ["#ffd700", "#d9a24a", "#f5ecd7", "#6e1f16", "#2b1d10"];
 
 // A circular "wand tap" burst centred on a screen point. canvas-confetti
-// takes fractional viewport coordinates (0-1), not pixels.
-function fireConfetti(x, y) {
+// takes fractional viewport coordinates (0-1), not pixels. Pass a
+// `colors` array to override the default parchment/ink palette — used
+// for the Sorting reveal, which bursts in the assigned house's colours.
+function fireConfetti(x, y, colors) {
   if (typeof confetti !== "function") return; // CDN blocked/offline — fail quietly
   confetti({
     particleCount: 90,
@@ -69,7 +85,7 @@ function fireConfetti(x, y) {
     ticks: 90,
     gravity: 0.9,
     scalar: 0.9,
-    colors: CONFETTI_COLORS,
+    colors: colors || CONFETTI_COLORS,
     origin: { x: x / window.innerWidth, y: y / window.innerHeight }
   });
 }
@@ -119,8 +135,17 @@ function fireMagicAt(x, y) {
   fireConfetti(x, y);
 }
 
-// Step 1: enter name
-function proceedToOath() {
+// Step 1: enter name -> Step 1.5: get Sorted
+const scrollSorting = document.getElementById("scrollSorting");
+const sortingHat = document.getElementById("sortingHat");
+const sortingStatus = document.getElementById("sortingStatus");
+const sortingResult = document.getElementById("sortingResult");
+const sortingHouseName = document.getElementById("sortingHouseName");
+const sortingFullName = document.getElementById("sortingFullName");
+const continueSortingBtn = document.getElementById("continueSorting");
+let marauderHouse = null; // { name, color, accent }
+
+function proceedToSorting() {
   const firstName = nameInput.value.trim();
   marauderNameValue = firstName ? `${firstName} ${randomSurname()}` : "Unknown Marauder";
   localStorage.setItem("marauderName", marauderNameValue);
@@ -128,10 +153,43 @@ function proceedToOath() {
   scrollIntro.style.animation = "rollUp 1s ease-in-out forwards";
   setTimeout(() => {
     scrollIntro.style.display = "none";
-    scrollReveal.style.opacity = 1;
-    scrollReveal.style.pointerEvents = "auto";
+    scrollSorting.style.opacity = 1;
+    scrollSorting.style.pointerEvents = "auto";
+    runSorting();
   }, 1000);
 }
+
+function runSorting() {
+  // Reset in case someone's been Sorted before this session (Exit -> reopen).
+  sortingHat.classList.remove("decided");
+  sortingStatus.classList.remove("hidden");
+  sortingStatus.textContent = "Hmm... let me think...";
+  sortingResult.classList.add("hidden");
+  continueSortingBtn.classList.add("hidden");
+
+  setTimeout(() => {
+    marauderHouse = randomHouse();
+    localStorage.setItem("marauderHouse", JSON.stringify(marauderHouse));
+
+    sortingHat.classList.add("decided");
+    sortingStatus.classList.add("hidden");
+    sortingHouseName.textContent = marauderHouse.name.toUpperCase() + "!";
+    sortingHouseName.style.color = marauderHouse.color;
+    sortingFullName.textContent = marauderNameValue;
+    sortingResult.classList.remove("hidden");
+    continueSortingBtn.classList.remove("hidden");
+
+    const rect = sortingHat.getBoundingClientRect();
+    fireConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, [marauderHouse.color, marauderHouse.accent, "#f5ecd7"]);
+  }, 1800);
+}
+
+continueSortingBtn.addEventListener("click", () => {
+  scrollSorting.style.opacity = 0;
+  scrollSorting.style.pointerEvents = "none";
+  scrollReveal.style.opacity = 1;
+  scrollReveal.style.pointerEvents = "auto";
+});
 
 // Step 2: Mischief Managed → reveal map with ripple
 function startMap(event) {
@@ -274,9 +332,9 @@ function closeMap() {
 }
 exitButton.addEventListener("click", closeMap);
 
-enterNameBtn.addEventListener("click", proceedToOath);
+enterNameBtn.addEventListener("click", proceedToSorting);
 nameInput.addEventListener("keypress", e => {
-  if (e.key === "Enter") proceedToOath();
+  if (e.key === "Enter") proceedToSorting();
 });
 enterMapBtn.addEventListener("click", e => startMap(e));
 
@@ -434,6 +492,16 @@ let lastStepWasLeft = false;
 function getMarauderName() {
   // Always read the freshest name from storage
   return localStorage.getItem("marauderName") || marauderNameValue || "Unknown Marauder";
+}
+
+function getMarauderHouseColor() {
+  if (marauderHouse) return marauderHouse.color;
+  try {
+    const stored = JSON.parse(localStorage.getItem("marauderHouse"));
+    return (stored && stored.color) || null;
+  } catch (e) {
+    return null;
+  }
 }
 
 // Bearing (in degrees) of travel from point 1 to point 2, film footprints
@@ -630,9 +698,11 @@ if (navigator.geolocation) {
         // collapse to a point; the label sizes to its own text and
         // centers itself via CSS (.mapLabelWrap), so long names grow
         // the tag instead of overflowing or drifting off-centre.
+        const houseColor = getMarauderHouseColor();
+        const houseStyle = houseColor ? ` style="--house-color:${houseColor}"` : "";
         const nameIcon = L.divIcon({
           className: "marauderNameIcon",
-          html: `<div class="mapLabelWrap"><div class="marauderNameLabel">${currentName}</div></div>`,
+          html: `<div class="mapLabelWrap"><div class="marauderNameLabel"${houseStyle}>${currentName}</div></div>`,
           iconSize: [0, 0],
           iconAnchor: [0, 40]
         });
@@ -670,7 +740,7 @@ if (navigator.geolocation) {
 
       // Share position with the group only while Marauder Mode is on —
       // writeMyPosition() itself no-ops if no room has been joined.
-      if (marauderOn) writeMyPosition(lat, lon, currentName);
+      if (marauderOn) writeMyPosition(lat, lon, currentName, getMarauderHouseColor());
     },
     err => {
       console.error("GPS error:", err);
