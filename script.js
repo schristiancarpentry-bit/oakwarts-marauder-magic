@@ -620,9 +620,16 @@ if (navigator.geolocation) {
         userMarker.setLatLng([lat, lon]);
         nameLabel.setLatLng([lat, lon]);
 
-        // update the name text in case it changed
+        // Update the name text only if it actually changed, and only the
+        // text itself — not the whole element. Replacing the element (as
+        // this used to do, every single GPS tick) restarts the ink-fade-in
+        // animation each time, which is what was making the tag flash on
+        // and off on phones where GPS updates fire often.
         const labelDiv = nameLabel.getElement();
-        if (labelDiv) labelDiv.innerHTML = `<div class="mapLabelWrap"><div class="marauderNameLabel">${currentName}</div></div>`;
+        const innerLabel = labelDiv && labelDiv.querySelector(".marauderNameLabel");
+        if (innerLabel && innerLabel.textContent !== currentName) {
+          innerLabel.textContent = currentName;
+        }
       }
 
       // Share position with the group only while Marauder Mode is on —

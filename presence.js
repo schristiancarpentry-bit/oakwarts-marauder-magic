@@ -116,8 +116,13 @@ function renderFriends(friends) {
     } else {
       friendMarkers[f.id].pin.setLatLng([f.lat, f.lon]);
       friendMarkers[f.id].label.setLatLng([f.lat, f.lon]);
+      // Update text only, not the whole element — same fix as the "you"
+      // label in script.js, avoids needless DOM churn on every snapshot.
       const labelDiv = friendMarkers[f.id].label.getElement();
-      if (labelDiv) labelDiv.innerHTML = `<div class="mapLabelWrap"><div class="marauderNameLabel friendLabel">${f.name}</div></div>`;
+      const innerLabel = labelDiv && labelDiv.querySelector(".marauderNameLabel");
+      if (innerLabel && innerLabel.textContent !== f.name) {
+        innerLabel.textContent = f.name;
+      }
     }
 
     friendMarkers[f.id].pin.setStyle({ opacity, fillOpacity: opacity * 0.9 });
