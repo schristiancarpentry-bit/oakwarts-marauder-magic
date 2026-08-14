@@ -411,33 +411,33 @@ body.plainMode .marauderNameLabel {
   position: relative;
   animation: inkFade 1.2s ease forwards;
 }
-/* Chunky cream shoe-print shape (toe + heel), matching the real film
-   prop's white/cream footprints on dark ink parchment — not thin dots. */
+/* Cream shoe-sole silhouette (matching the real film prop's white/cream
+   footprints on dark ink parchment). One continuous clip-path shape —
+   toe, waist and heel in a single outline — rather than two overlapping
+   circles, which left a visible seam/border where they met and read as
+   "two dots" instead of one shoe print (per Simon's reference photo of
+   the real prop's footfall). Default orientation points "up"; the
+   wrapping .footprint-icon rotates the whole thing to the walking bearing. */
 .foot {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 8px;
+  width: 6px;
   height: 11px;
-  border-radius: 50% 50% 40% 40%;
   background: #f2e6c4;
   border: 1px solid rgba(43, 29, 16, 0.55);
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 0 1.5px rgba(0, 0, 0, 0.25);
+  clip-path: polygon(
+    50% 0%, 72% 3%, 88% 14%, 96% 30%,
+    92% 44%, 78% 52%, 68% 58%, 74% 68%,
+    88% 78%, 90% 90%, 78% 98%, 60% 100%,
+    40% 100%, 22% 98%, 10% 90%, 12% 78%,
+    26% 68%, 32% 58%, 22% 52%, 8% 44%,
+    4% 30%, 12% 14%, 28% 3%
+  );
 }
-.foot::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -5px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: inherit;
-  border: inherit;
-  transform: translateX(-50%);
-}
-.foot-left { transform: translate(-10px, -55%) rotate(-12deg); }
-.foot-right { transform: translate(3px, -45%) rotate(12deg); }
+.foot-left { transform: translate(-6px, -55%) rotate(-12deg); }
+.foot-right { transform: translate(1px, -45%) rotate(12deg); }
 
 /* =========================================
    ANIMATIONS

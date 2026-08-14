@@ -283,7 +283,8 @@ enterMapBtn.addEventListener("click", e => startMap(e));
 // -----------------------------
 // Map initialisation
 // -----------------------------
-const map = L.map("map").setView([51.755845, -0.288546], 17);
+// West Herts College, Hempstead Road, Watford, WD17 3EZ
+const map = L.map("map").setView([51.6603421, -0.4072999], 17);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -349,7 +350,7 @@ setMarauderMode(false);
 // -----------------------------
 // Saved markers from localStorage
 // -----------------------------
-let savedMarkers = JSON.parse(localStorage.getItem("oaklandsMarkers")) || [];
+let savedMarkers = JSON.parse(localStorage.getItem("westhertsMarkers")) || [];
 
 const labelLayer = L.layerGroup().addTo(map);
 
@@ -407,7 +408,7 @@ function confirmMarker() {
   if (name && pendingLatLng) {
     addMarkerAndLabel(pendingLatLng.lat, pendingLatLng.lon, name);
     savedMarkers.push({ name, lat: pendingLatLng.lat, lon: pendingLatLng.lon });
-    localStorage.setItem("oaklandsMarkers", JSON.stringify(savedMarkers));
+    localStorage.setItem("westhertsMarkers", JSON.stringify(savedMarkers));
   }
   closeMarkerModal();
 }
