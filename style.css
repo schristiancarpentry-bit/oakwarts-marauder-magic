@@ -4,11 +4,14 @@
 :root {
   --parchment-brown: #7a5e2a;
   --ink-dark: #3b2608;
+  --ink-main: #2b1d10;
+  --ink-main-soft: #4a3826;
   --ink-red: #6e1f16;
   --ink-red-light: #9c3b2c;
   --font-display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
   --font-body: 'IM Fell English', Georgia, serif;
   --font-hand: 'Mrs Saint Delafield', 'Segoe Script', cursive;
+  --font-title: 'Pirata One', var(--font-display);
 }
 
 /* =========================================
@@ -40,11 +43,25 @@ body {
   opacity: 1 !important;
 }
 
+/* Ink-blot reveal: while revealing, the map is briefly raised above the
+   parchment and shown only within a growing circle centred on the tap
+   point — the parchment appears to be "eaten through" by ink, spreading
+   out to uncover the map beneath. Reset to a normal, unclipped map once
+   the reveal finishes (see script.js) so panning/markers work normally. */
+#map.revealing {
+  z-index: 1901;
+  clip-path: circle(0% at var(--tap-x, 50%) var(--tap-y, 50%));
+  transition: clip-path 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#map.revealing.inkReveal {
+  clip-path: circle(150% at var(--tap-x, 50%) var(--tap-y, 50%));
+}
+
 /* Enchanted parchment treatment for the map tiles — this is what makes
    plain OpenStreetMap read as an old hand-inked map. Switched off in
    "plain map" mode for real-world navigation. */
 body:not(.plainMode) #map .leaflet-tile-pane {
-  filter: sepia(0.55) saturate(1.7) hue-rotate(-10deg) contrast(1.15) brightness(0.92);
+  filter: sepia(0.75) saturate(1.1) hue-rotate(-8deg) contrast(1.3) brightness(0.95);
 }
 
 /* =========================================
@@ -175,45 +192,45 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 .marauderNameLabel {
   font-family: var(--font-hand);
   font-size: 1.5rem;
-  color: var(--ink-red);
-  background: rgba(255, 255, 240, 0.88);
-  border: 1px solid rgba(122, 94, 42, 0.5);
-  border-radius: 6px;
-  padding: 0 8px;
+  color: var(--ink-main);
+  background: rgba(255, 248, 225, 0.92);
+  clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
+  padding: 2px 16px;
   text-align: center;
   white-space: nowrap;
   pointer-events: none;
   text-shadow: 0 0 3px #fff;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
   opacity: 0;
   animation: inkFade 2s ease forwards;
 }
 body.plainMode .marauderNameLabel {
   font-family: var(--font-body);
   font-size: 0.95rem;
-  color: var(--ink-dark);
+  box-shadow: none;
 }
 
 /* =========================================
    PLACE LABELS FOR MARAUDER MODE
 ========================================= */
 .placeLabelText {
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  color: #2c1d0c;
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  color: var(--ink-main);
   text-shadow: 0 0 3px rgba(255,255,255,0.7);
-  background: rgba(255,255,240,0.85);
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid rgba(120,90,60,0.4);
+  background: rgba(255,248,225,0.9);
+  clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
+  padding: 1px 12px;
 }
 
-/* Ink-drop marker pins, replacing Leaflet's default blue teardrop */
+/* Wax-seal marker pins, replacing Leaflet's default blue teardrop —
+   an amber seal on an old parchment map reads as "a marked place." */
 .inkPin {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, var(--ink-red-light), var(--ink-red) 70%);
-  box-shadow: 0 0 6px rgba(110, 31, 22, 0.6), 0 0 2px rgba(0, 0, 0, 0.4);
+  background: radial-gradient(circle at 35% 30%, #d9a24a, #a56a1e 70%);
+  box-shadow: 0 0 6px rgba(165, 106, 30, 0.6), 0 0 2px rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(59, 38, 8, 0.6);
 }
 
@@ -226,17 +243,33 @@ body.plainMode .marauderNameLabel {
   position: relative;
   animation: inkFade 1.2s ease forwards;
 }
+/* Chunky cream shoe-print shape (toe + heel), matching the real film
+   prop's white/cream footprints on dark ink parchment — not thin dots. */
 .foot {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 6px;
-  height: 10px;
-  border-radius: 50% 50% 45% 45%;
-  background: var(--ink-red);
+  width: 8px;
+  height: 11px;
+  border-radius: 50% 50% 40% 40%;
+  background: #f2e6c4;
+  border: 1px solid rgba(43, 29, 16, 0.55);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.25);
 }
-.foot-left { transform: translate(-9px, -50%) rotate(-10deg); }
-.foot-right { transform: translate(3px, -50%) rotate(10deg); }
+.foot::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: inherit;
+  border: inherit;
+  transform: translateX(-50%);
+}
+.foot-left { transform: translate(-10px, -55%) rotate(-12deg); }
+.foot-right { transform: translate(3px, -45%) rotate(12deg); }
 
 /* =========================================
    ANIMATIONS
@@ -266,8 +299,8 @@ body.plainMode .marauderNameLabel {
 ========================================= */
 #modeToggle {
   position: fixed;
-  top: max(10px, env(safe-area-inset-top));
-  right: 10px;
+  top: max(30px, calc(env(safe-area-inset-top) + 26px));
+  right: 26px;
   background: var(--ink-red);
   color: #fffaf0;
   border: none;
@@ -289,7 +322,33 @@ body.plainMode .marauderNameLabel {
   transform: scale(1.05);
 }
 
-/* Magical ripple effect */
+/* Ink flourish shown briefly when Marauder Mode is switched off —
+   the closing half of the film's ritual phrase pair. */
+#mischiefToast {
+  position: fixed;
+  top: max(70px, calc(env(safe-area-inset-top) + 66px));
+  right: 26px;
+  z-index: 1100;
+  pointer-events: none;
+  font-family: var(--font-hand);
+  font-size: 1.3rem;
+  color: var(--ink-main);
+  background: rgba(255, 248, 225, 0.92);
+  clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
+  padding: 2px 16px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+#mischiefToast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Ink-blot ripple — the visible spreading edge that accompanies the
+   parchment being "eaten through" (see #scrollReveal.inkReveal) to
+   reveal the map beneath, spreading out from the tap point. */
 #rippleEffect {
   position: fixed;
   top: 0;
@@ -297,11 +356,16 @@ body.plainMode .marauderNameLabel {
   width: 0;
   height: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0.1) 70%, transparent 100%);
+  background: radial-gradient(circle,
+    rgba(43, 29, 16, 0) 55%,
+    rgba(43, 29, 16, 0.55) 62%,
+    rgba(43, 29, 16, 0.25) 72%,
+    rgba(255, 215, 0, 0.15) 80%,
+    transparent 100%);
   pointer-events: none;
   transform: translate(-50%, -50%);
   opacity: 0;
-  transition: width 1.5s ease, height 1.5s ease, opacity 1s ease;
+  transition: width 1.4s cubic-bezier(0.4, 0, 0.2, 1), height 1.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease 0.9s;
   z-index: 9999;
 }
 
@@ -328,42 +392,106 @@ body.plainMode #mapVignette.show {
 
 #titleBanner {
   position: fixed;
-  top: max(14px, env(safe-area-inset-top));
+  top: max(30px, calc(env(safe-area-inset-top) + 26px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 600;
   pointer-events: none;
-  font-family: var(--font-hand);
-  font-size: clamp(1.4rem, 4vw, 2.1rem);
-  color: var(--ink-red);
+  text-align: center;
   text-shadow: 0 0 6px rgba(255, 248, 220, 0.9), 0 0 2px rgba(255, 248, 220, 0.9);
   opacity: 0;
   transition: opacity 1.5s ease-in-out;
 }
 #titleBanner.show {
-  opacity: 0.85;
+  opacity: 0.9;
 }
 body.plainMode #titleBanner.show {
   opacity: 0;
 }
+#titleMain {
+  font-family: var(--font-title);
+  font-size: clamp(1.5rem, 5vw, 2.3rem);
+  letter-spacing: 1px;
+  color: var(--ink-main);
+}
+#titleSub {
+  font-family: var(--font-hand);
+  font-size: clamp(0.85rem, 2.3vw, 1.1rem);
+  color: var(--ink-main-soft);
+  margin-top: -6px;
+}
 
 #compassRose {
   position: fixed;
-  left: 14px;
-  bottom: max(14px, env(safe-area-inset-bottom));
+  left: 26px;
+  bottom: max(26px, calc(env(safe-area-inset-bottom) + 26px));
   width: 84px;
   height: 84px;
   z-index: 600;
   pointer-events: none;
-  color: var(--ink-red);
+  color: var(--ink-main);
   opacity: 0;
   transition: opacity 1.5s ease-in-out;
 }
 #compassRose.show {
-  opacity: 0.75;
+  opacity: 0.8;
 }
 body.plainMode #compassRose.show {
   opacity: 0;
+}
+
+/* =========================================
+   PARCHMENT BORDER FRAME — dotted edge with
+   repeating Latin motto, like the real prop's page border
+========================================= */
+#parchmentFrame {
+  position: fixed;
+  inset: 0;
+  z-index: 520;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+}
+#parchmentFrame.show {
+  opacity: 0.9;
+}
+body.plainMode #parchmentFrame.show {
+  opacity: 0;
+}
+.frameStrip {
+  position: absolute;
+  background-image: radial-gradient(circle, rgba(43, 29, 16, 0.6) 1.4px, transparent 1.6px);
+  background-size: 9px 9px;
+  background-position: center;
+}
+.frameTop, .frameBottom {
+  left: 0;
+  right: 0;
+  height: 20px;
+}
+.frameTop { top: 0; }
+.frameBottom { bottom: 0; }
+.frameLeft, .frameRight {
+  top: 20px;
+  bottom: 20px;
+  width: 20px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.frameLeft { left: 0; }
+.frameRight { right: 0; }
+.frameLeft span, .frameRight span {
+  writing-mode: vertical-rl;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  color: var(--ink-main-soft);
+  white-space: nowrap;
+}
+.frameLeft span {
+  transform: rotate(180deg);
 }
 
 /* =========================================

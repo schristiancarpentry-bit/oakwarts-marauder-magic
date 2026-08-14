@@ -11,8 +11,10 @@ const enterNameBtn = document.getElementById("enterName");
 const enterMapBtn = document.getElementById("enterMap");
 const nameInput = document.getElementById("marauderName");
 const mapVignette = document.getElementById("mapVignette");
+const parchmentFrame = document.getElementById("parchmentFrame");
 const titleBanner = document.getElementById("titleBanner");
 const compassRose = document.getElementById("compassRose");
+const mischiefToast = document.getElementById("mischiefToast");
 
 // Step 1: enter name
 function proceedToOath() {
@@ -36,6 +38,7 @@ function startMap(event) {
   localStorage.setItem("marauderName", marauderNameValue);
 
   const ripple = document.getElementById("rippleEffect");
+  const mapEl = document.getElementById("map");
   const x = event.clientX || window.innerWidth / 2;
   const y = event.clientY || window.innerHeight / 2;
 
@@ -45,23 +48,36 @@ function startMap(event) {
   ripple.style.height = "0";
   ripple.style.opacity = "1";
 
+  // Ink-blot reveal: the map is raised above the parchment and shown
+  // only within a growing circle centred on the tap point, so the
+  // parchment appears "eaten through" by ink spreading to the edges.
+  mapEl.style.setProperty("--tap-x", `${x}px`);
+  mapEl.style.setProperty("--tap-y", `${y}px`);
+  mapEl.classList.add("mapVisible", "revealing");
+
   requestAnimationFrame(() => {
     ripple.style.width = "200vw";
     ripple.style.height = "200vw";
     ripple.style.opacity = "0";
+    mapEl.classList.add("inkReveal");
   });
 
   setTimeout(() => {
     scrollReveal.style.display = "none";
-    document.getElementById("map").classList.add("mapVisible");
+    // Reveal finished — drop the temporary clip-path/z-index so the map
+    // behaves normally again (pannable, unclipped) for the rest of the session.
+    mapEl.classList.remove("revealing", "inkReveal");
+    mapEl.style.removeProperty("--tap-x");
+    mapEl.style.removeProperty("--tap-y");
     mapVignette.classList.add("show");
+    parchmentFrame.classList.add("show");
     titleBanner.classList.add("show");
     compassRose.classList.add("show");
 
     // Force name update before GPS begins
     marauderNameValue = localStorage.getItem("marauderName") || "Unknown Marauder";
     map.invalidateSize();
-  }, 1300);
+  }, 1450);
 }
 
 enterNameBtn.addEventListener("click", proceedToOath);
@@ -85,12 +101,22 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 // -----------------------------
 let marauderOn = true; // you've just sworn the oath, so it starts active
 const modeToggleBtn = document.getElementById("modeToggle");
+let mischiefTimer = null;
 
 function setMarauderMode(on) {
+  const wasOn = marauderOn;
   marauderOn = on;
   document.body.classList.toggle("plainMode", !on);
   modeToggleBtn.textContent = on ? "Reveal Real Map" : "Marauder Mode";
   modeToggleBtn.classList.toggle("active", on);
+
+  // Closing half of the film's ritual phrase pair — the oath reveals
+  // the map, "Mischief Managed" is the flourish for hiding it again.
+  if (wasOn && !on) {
+    clearTimeout(mischiefTimer);
+    mischiefToast.classList.add("show");
+    mischiefTimer = setTimeout(() => mischiefToast.classList.remove("show"), 1800);
+  }
 }
 modeToggleBtn.addEventListener("click", () => setMarauderMode(!marauderOn));
 setMarauderMode(true);
