@@ -750,6 +750,28 @@ body.plainMode #titleBanner.show {
   margin-top: 0;
 }
 
+#recentreButton {
+  position: fixed;
+  left: 26px;
+  /* Sits just above the compass rose, same corner. */
+  bottom: max(122px, calc(env(safe-area-inset-bottom) + 122px));
+  background: var(--ink-main);
+  color: #fffaf0;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: bold;
+  font-size: 0.9rem;
+  z-index: 1100;
+  box-shadow: 0 0 8px rgba(43, 29, 16, 0.5);
+  transition: transform 0.2s ease;
+}
+#recentreButton:hover {
+  transform: scale(1.05);
+}
+
 #compassRose {
   position: fixed;
   left: 26px;

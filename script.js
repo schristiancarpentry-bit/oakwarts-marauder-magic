@@ -3,6 +3,10 @@
 // -----------------------------
 
 let marauderNameValue = ""; // start blank
+// True only once the ink-blot reveal has actually finished and the map
+// is genuinely on screen — guards the GPS callback below so it can't
+// create your marker early, before your name/house are decided.
+let hasEnteredMap = false;
 
 // A random Harry Potter surname gets tacked onto whatever first name is
 // typed in — every Marauder needs a proper wizarding surname.
@@ -290,8 +294,10 @@ function startMap(event) {
     titleBanner.classList.add("show");
     compassRose.classList.add("show");
 
-    // Force name update before GPS begins
+    // Force name update, then let the GPS callback actually start
+    // creating/moving your marker — see hasEnteredMap above.
     marauderNameValue = localStorage.getItem("marauderName") || "Unknown Marauder";
+    hasEnteredMap = true;
     map.invalidateSize();
   }, 1450);
 }
@@ -360,6 +366,13 @@ function closeMap() {
   }, 1450);
 }
 exitButton.addEventListener("click", closeMap);
+
+// Snaps the view back to your own position — for when you've zoomed
+// or panned away looking around and want to find yourself again.
+const recentreButton = document.getElementById("recentreButton");
+recentreButton.addEventListener("click", () => {
+  if (userMarker) map.setView(userMarker.getLatLng(), 18);
+});
 
 enterNameBtn.addEventListener("click", proceedToSorting);
 nameInput.addEventListener("keypress", e => {
@@ -791,6 +804,18 @@ function clearNpcs() {
 if (navigator.geolocation) {
   navigator.geolocation.watchPosition(
     pos => {
+      // GPS starts watching the moment the page loads — completely
+      // independent of the oath/Sorting flow. Without this guard, a fix
+      // arriving while still on the name-entry or Sorting screen would
+      // create the "you" marker right then, using whatever name/house
+      // state happened to exist at that instant (often "Unknown
+      // Marauder" and no house at all, since Sorting hasn't run yet).
+      // The name text self-corrects on the next tick, but the house
+      // colour never does — it's only ever set once, at creation — so
+      // this was the real cause of "the hat says one thing, the map
+      // shows another."
+      if (!hasEnteredMap) return;
+
       const lat = pos.coords.latitude;
       const lon = pos.coords.longitude;
       const currentName = getMarauderName();
