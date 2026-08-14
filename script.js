@@ -80,6 +80,61 @@ function startMap(event) {
   }, 1450);
 }
 
+// Step 3: Exit → reverse of startMap(). The ink retreats back into the
+// exit button's position, taking the map with it, and the blank oath
+// parchment returns — ready to be reopened with another "Mischief Managed."
+const exitButton = document.getElementById("exitButton");
+const mischiefFull = document.getElementById("mischiefFull");
+
+function closeMap() {
+  const mapEl = document.getElementById("map");
+  const rect = exitButton.getBoundingClientRect();
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height / 2;
+
+  const ripple = document.getElementById("rippleEffect");
+
+  // Snap the ripple to "fully spread" at the exit point with no
+  // transition, matching the state the map is actually in right now —
+  // then let it retreat, mirroring the opening ripple in reverse.
+  ripple.style.transition = "none";
+  ripple.style.top = `${y}px`;
+  ripple.style.left = `${x}px`;
+  ripple.style.width = "200vw";
+  ripple.style.height = "200vw";
+  ripple.style.opacity = "1";
+  void ripple.offsetWidth; // force layout so the snap above isn't animated
+  ripple.style.transition = "";
+
+  mapEl.style.setProperty("--tap-x", `${x}px`);
+  mapEl.style.setProperty("--tap-y", `${y}px`);
+  mapEl.classList.add("revealing", "inkReveal"); // clip-path: circle(150%) — visually identical to unclipped, no jump
+
+  mischiefFull.classList.add("show");
+
+  requestAnimationFrame(() => {
+    ripple.style.width = "0";
+    ripple.style.height = "0";
+    ripple.style.opacity = "0";
+    mapEl.classList.remove("inkReveal"); // shrinks the circle back to the exit point
+  });
+
+  setTimeout(() => {
+    mapEl.classList.remove("mapVisible", "revealing");
+    mapEl.style.removeProperty("--tap-x");
+    mapEl.style.removeProperty("--tap-y");
+    mapVignette.classList.remove("show");
+    parchmentFrame.classList.remove("show");
+    titleBanner.classList.remove("show");
+    compassRose.classList.remove("show");
+    mischiefFull.classList.remove("show");
+
+    // Bring the blank oath parchment back, ready to reopen.
+    scrollReveal.style.display = "";
+  }, 1450);
+}
+exitButton.addEventListener("click", closeMap);
+
 enterNameBtn.addEventListener("click", proceedToOath);
 nameInput.addEventListener("keypress", e => {
   if (e.key === "Enter") proceedToOath();

@@ -322,6 +322,50 @@ body.plainMode .marauderNameLabel {
   transform: scale(1.05);
 }
 
+#exitButton {
+  position: fixed;
+  top: max(30px, calc(env(safe-area-inset-top) + 26px));
+  left: 26px;
+  background: var(--ink-main);
+  color: #fffaf0;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: bold;
+  font-size: 1rem;
+  z-index: 1100;
+  box-shadow: 0 0 8px rgba(43, 29, 16, 0.5);
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+#exitButton:hover {
+  background: #4a3826;
+  transform: scale(1.05);
+}
+
+/* Big ink flourish that fills the screen while the map is closing,
+   mirroring the closing half of the film's ritual phrase pair. */
+#mischiefFull {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-family: var(--font-hand);
+  font-size: clamp(2.2rem, 9vw, 4.5rem);
+  color: var(--ink-main);
+  text-align: center;
+  text-shadow: 0 0 14px rgba(255, 248, 220, 0.95), 0 0 4px rgba(255, 248, 220, 0.95);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+#mischiefFull.show {
+  opacity: 1;
+}
+
 /* Ink flourish shown briefly when Marauder Mode is switched off —
    the closing half of the film's ritual phrase pair. */
 #mischiefToast {
