@@ -4,6 +4,20 @@
 
 let marauderNameValue = ""; // start blank
 
+// A random Harry Potter surname gets tacked onto whatever first name is
+// typed in — every Marauder needs a proper wizarding surname.
+const HP_SURNAMES = [
+  "Potter", "Weasley", "Granger", "Longbottom", "Lovegood", "Malfoy",
+  "Black", "Lupin", "Diggory", "Chang", "Finnigan", "Thomas", "Patil",
+  "Brown", "Bones", "Abbott", "Creevey", "Jordan", "Wood", "Bell",
+  "Johnson", "Dumbledore", "McGonagall", "Flitwick", "Sprout",
+  "Trelawney", "Moody", "Tonks", "Shacklebolt", "Riddle", "Scamander",
+  "Ollivander", "Fawley"
+];
+function randomSurname() {
+  return HP_SURNAMES[Math.floor(Math.random() * HP_SURNAMES.length)];
+}
+
 // References
 const scrollIntro = document.getElementById("scrollIntro");
 const scrollReveal = document.getElementById("scrollReveal");
@@ -42,7 +56,8 @@ memberListToggleBtn.addEventListener("click", () => {
 
 // Step 1: enter name
 function proceedToOath() {
-  marauderNameValue = nameInput.value.trim() || "Unknown Marauder";
+  const firstName = nameInput.value.trim();
+  marauderNameValue = firstName ? `${firstName} ${randomSurname()}` : "Unknown Marauder";
   localStorage.setItem("marauderName", marauderNameValue);
 
   scrollIntro.style.animation = "rollUp 1s ease-in-out forwards";
@@ -64,9 +79,12 @@ function startMap(event) {
     return;
   }
 
+  // The full "First Surname" was already decided back in Step 1 — reread
+  // from storage rather than the raw first-name field, which would
+  // otherwise silently strip the randomly-assigned surname back off.
   marauderNameValue =
-    nameInput.value.trim() ||
     localStorage.getItem("marauderName") ||
+    marauderNameValue ||
     "Unknown Marauder";
   localStorage.setItem("marauderName", marauderNameValue);
 
