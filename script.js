@@ -439,6 +439,19 @@ setMarauderMode(false);
 // -----------------------------
 let savedMarkers = JSON.parse(localStorage.getItem("westhertsMarkers")) || [];
 
+// Markers saved before the delete feature existed have no id — give
+// them one now so "Remove marker" works on those too, not just new ones.
+if (savedMarkers.some(m => !m.id)) {
+  savedMarkers.forEach(m => { if (!m.id) m.id = randomMarkerId(); });
+  localStorage.setItem("westhertsMarkers", JSON.stringify(savedMarkers));
+}
+
+// Pins used to be added straight to the map, outside any layer group —
+// renderMarkers() only ever cleared labelLayer, so re-rendering after a
+// delete would leave the old pins behind and duplicate the remaining
+// ones on top. Both pins and labels now live in their own layer group
+// so a full clear+rebuild is actually clean.
+const pinLayer = L.layerGroup().addTo(map);
 const labelLayer = L.layerGroup().addTo(map);
 
 const inkPinIcon = L.divIcon({
@@ -448,9 +461,17 @@ const inkPinIcon = L.divIcon({
   iconAnchor: [7, 7]
 });
 
-function addMarkerAndLabel(lat, lon, name) {
-  const pin = L.marker([lat, lon], { icon: inkPinIcon }).addTo(map);
-  pin.bindPopup(`<b>${name}</b><br>Lat: ${lat}<br>Lon: ${lon}`);
+function randomMarkerId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function addMarkerAndLabel(lat, lon, name, id) {
+  const pin = L.marker([lat, lon], { icon: inkPinIcon });
+  pin.bindPopup(
+    `<b>${name}</b><br>Lat: ${lat}<br>Lon: ${lon}` +
+    `<br><button class="popupDeleteBtn" data-marker-id="${id}">Remove marker</button>`
+  );
+  pinLayer.addLayer(pin);
 
   const labelIcon = L.divIcon({
     className: "placeLabelIcon",
@@ -464,10 +485,34 @@ function addMarkerAndLabel(lat, lon, name) {
 }
 
 function renderMarkers() {
+  pinLayer.clearLayers();
   labelLayer.clearLayers();
-  savedMarkers.forEach(m => addMarkerAndLabel(m.lat, m.lon, m.name));
+  savedMarkers.forEach(m => addMarkerAndLabel(m.lat, m.lon, m.name, m.id));
 }
 renderMarkers();
+
+function removeMarker(id) {
+  savedMarkers = savedMarkers.filter(m => m.id !== id);
+  localStorage.setItem("westhertsMarkers", JSON.stringify(savedMarkers));
+  renderMarkers();
+}
+
+// Leaflet deliberately stops clicks inside a popup from bubbling out
+// (that's what stops "click the map to add a marker" firing when you
+// click inside a popup) — which also means a delegated listener on
+// #map would never see this click. Using Leaflet's own popupopen event
+// instead: it hands us the freshly-created popup DOM directly, so we
+// can wire the button up right there, no bubbling required.
+map.on("popupopen", e => {
+  const el = e.popup.getElement();
+  const btn = el && el.querySelector(".popupDeleteBtn");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      removeMarker(btn.dataset.markerId);
+      map.closePopup();
+    });
+  }
+});
 
 // -----------------------------
 // Marker naming modal (replaces the native prompt())
@@ -493,8 +538,9 @@ function closeMarkerModal() {
 function confirmMarker() {
   const name = markerNameInput.value.trim();
   if (name && pendingLatLng) {
-    addMarkerAndLabel(pendingLatLng.lat, pendingLatLng.lon, name);
-    savedMarkers.push({ name, lat: pendingLatLng.lat, lon: pendingLatLng.lon });
+    const id = randomMarkerId();
+    addMarkerAndLabel(pendingLatLng.lat, pendingLatLng.lon, name, id);
+    savedMarkers.push({ id, name, lat: pendingLatLng.lat, lon: pendingLatLng.lon });
     localStorage.setItem("westhertsMarkers", JSON.stringify(savedMarkers));
   }
   closeMarkerModal();
@@ -516,7 +562,6 @@ map.on("click", e => {
 // GPS tracking + footfall trail
 // -----------------------------
 let userMarker, nameLabel;
-let lastStepWasLeft = false;
 
 function getMarauderName() {
   // Always read the freshest name from storage
@@ -533,24 +578,14 @@ function getMarauderHouseColor() {
   }
 }
 
-// Bearing (in degrees) of travel from point 1 to point 2, film footprints
-// point the way you're walking rather than sitting still on a compass axis.
-function bearingBetween(lat1, lon1, lat2, lon2) {
-  const toRad = d => (d * Math.PI) / 180;
-  const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
-  const x =
-    Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
-    Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(toRad(lon2 - lon1));
-  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
-}
-
-function dropFootprint(lat, lon, bearingDeg) {
-  lastStepWasLeft = !lastStepWasLeft;
-  const side = lastStepWasLeft ? "foot-left" : "foot-right";
-
+// A cream ink dot at each step — not a directional shoe shape, since a
+// bearing computed from two consecutive raw GPS fixes is often just
+// wrong at pedestrian scale (ordinary GPS jitter overwhelms the "true"
+// direction over a couple of steps). See .foot in style.css.
+function dropFootprint(lat, lon) {
   const footIcon = L.divIcon({
     className: "footprintMarker",
-    html: `<div class="footprint-icon" style="transform: rotate(${bearingDeg}deg)"><div class="foot ${side}"></div></div>`,
+    html: `<div class="footprint-icon"><div class="foot"></div></div>`,
     iconSize: [24, 24],
     iconAnchor: [12, 12]
   });
@@ -737,7 +772,7 @@ function stepNpcs() {
 
     // Leave a footprint behind at the step they just took — same visual
     // as real footprints, reinforcing "someone just walked through here."
-    dropFootprint(prevLat, prevLon, bearingBetween(prevLat, prevLon, newLat, newLon));
+    dropFootprint(prevLat, prevLon);
   });
 }
 
@@ -786,15 +821,13 @@ if (navigator.geolocation) {
 
         setTimeout(() => map.setView([lat, lon], 18), 500);
       } else {
-        // footfall trail, replacing the old plain dot trail — only
-        // while Marauder Mode is on, since footprints are part of the
-        // magic, not something a plain accurate map should show.
+        // footfall trail — only while Marauder Mode is on, since it's
+        // part of the magic, not something a plain accurate map should show.
         if (marauderOn) {
           const prev = userMarker.getLatLng();
           const jitterLat = prev.lat + (Math.random() - 0.5) * 0.00003;
           const jitterLon = prev.lng + (Math.random() - 0.5) * 0.00003;
-          const bearingDeg = bearingBetween(prev.lat, prev.lng, lat, lon);
-          dropFootprint(jitterLat, jitterLon, bearingDeg);
+          dropFootprint(jitterLat, jitterLon);
         }
 
         // update position + label text live
