@@ -482,8 +482,10 @@ const NPC_ROSTER = [
   "Dobby", "Hagrid", "Luna Lovegood", "Peeves", "Moaning Myrtle",
   "Nearly Headless Nick", "Fang", "Professor McGonagall", "Filch",
   "Madam Pomfrey", "Professor Flitwick", "Kreacher", "Winky",
-  "The Grey Lady", "The Fat Friar", "Professor Sprout"
+  "The Grey Lady", "The Fat Friar", "Professor Sprout", "Professor Snape"
 ];
+const NPC_SNAPE_NAME = "Professor Snape";
+const NPC_SNAPE_AVOID_RADIUS_M = 35; // everyone else keeps this far from him if they can help it
 const NPC_COUNT = 7;
 const NPC_STEP_MS = 3000; // how often each one takes a "step"
 const NPC_SPAWN_MIN_M = 100; // never spawn closer than this to you — stops them clustering around your dot
@@ -546,22 +548,39 @@ function spawnNpcs() {
 }
 
 function stepNpcs() {
+  const snape = npcs.find(n => n.name === NPC_SNAPE_NAME);
+
   npcs.forEach(npc => {
     const prevLat = npc.lat;
     const prevLon = npc.lon;
 
-    const distFromHomeM = Math.hypot(
-      (npc.lat - npc.homeLat) * 111320,
-      (npc.lon - npc.homeLon) * 111320 * Math.cos((npc.homeLat * Math.PI) / 180)
-    );
-
-    // Wandered too far from where they spawned — head roughly back
-    // home (with a little wobble) instead of drifting off indefinitely.
     let angle;
-    if (distFromHomeM > NPC_WANDER_RADIUS_M) {
-      angle = Math.atan2(npc.homeLon - npc.lon, npc.homeLat - npc.lat) + (Math.random() - 0.5) * 1.2;
-    } else {
-      angle = Math.random() * Math.PI * 2;
+
+    // Nobody wants to be near Snape. Takes priority over everything
+    // else — even heading home — while he's actually close by.
+    if (snape && npc !== snape) {
+      const distFromSnapeM = Math.hypot(
+        (npc.lat - snape.lat) * 111320,
+        (npc.lon - snape.lon) * 111320 * Math.cos((npc.lat * Math.PI) / 180)
+      );
+      if (distFromSnapeM < NPC_SNAPE_AVOID_RADIUS_M) {
+        angle = Math.atan2(npc.lon - snape.lon, npc.lat - snape.lat) + (Math.random() - 0.5) * 0.8;
+      }
+    }
+
+    if (angle === undefined) {
+      const distFromHomeM = Math.hypot(
+        (npc.lat - npc.homeLat) * 111320,
+        (npc.lon - npc.homeLon) * 111320 * Math.cos((npc.homeLat * Math.PI) / 180)
+      );
+
+      // Wandered too far from where they spawned — head roughly back
+      // home (with a little wobble) instead of drifting off indefinitely.
+      if (distFromHomeM > NPC_WANDER_RADIUS_M) {
+        angle = Math.atan2(npc.homeLon - npc.lon, npc.homeLat - npc.lat) + (Math.random() - 0.5) * 1.2;
+      } else {
+        angle = Math.random() * Math.PI * 2;
+      }
     }
 
     const dist = 4 + Math.random() * 8; // metres this step
