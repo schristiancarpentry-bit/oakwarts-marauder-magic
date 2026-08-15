@@ -237,16 +237,24 @@ memberListInviteBtn.addEventListener("click", () => {
 
 // An invite link lands here as ?join=CODE — pre-fills the code
 // wherever it's needed (oath screen and/or the map panel, whichever
-// the recipient reaches first) so all they have to do is tick consent,
-// not type anything. Doesn't auto-join on its own — Sorting still
-// happens first either way, and sharing your location is still an
-// explicit opt-in, never assumed just because a link was clicked.
+// the recipient reaches first) AND pre-ticks consent, so arriving via
+// a Portkey really is automatic: Sorting still happens as normal (that
+// ceremony isn't skipped), but there's no code to type and no button
+// that silently refuses to work until a checkbox is found and ticked.
+// Genuinely tapping the Portkey link at all is treated as the consent
+// here — Simon's explicit call for this flow specifically — but it's
+// left visibly ticked rather than hidden, so it's still obvious and
+// still one tap to opt back out before entering the map.
 const inviteCode = new URLSearchParams(location.search).get("join");
 if (inviteCode) {
   groupCodeInput.value = inviteCode;
   groupCodeInput.dispatchEvent(new Event("input"));
+  consentCheckbox.checked = true;
+
   mapGroupCodeInput.value = inviteCode;
   mapGroupCodeInput.dispatchEvent(new Event("input"));
+  mapConsentCheckbox.checked = true;
+  mapConsentCheckbox.dispatchEvent(new Event("change")); // reveals the map's Join button
 }
 
 // Parchment/ink/gold — kept consistent with the rest of the theme
