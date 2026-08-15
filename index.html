@@ -49,20 +49,32 @@
 
   <!-- Scroll 1.5 – The Sorting -->
   <div id="scrollSorting">
+    <!-- Simon's Kling clip: doors closed close-up -> swing open -> reveal
+         the Great Hall with the stool waiting. script.js skips straight
+         to that closed-doors moment (the first ~2.6s is doors CLOSING,
+         which reads backwards) and plays it through to its natural end,
+         then holds on the last frame while the hat ceremony runs on top. -->
+    <video id="sortingVideo" muted playsinline preload="auto">
+      <source src="assets/sorting-reveal.mp4" type="video/mp4" />
+    </video>
+
+    <!-- Positioned independently of #scrollInnerSorting (via JS, to land
+         exactly on the stool in the video) rather than nested inside it. -->
+    <div id="sortingHat" class="hatHidden" aria-hidden="true">
+      <!-- Drop your own hat image at assets/sorting-hat.png and it's
+           used automatically; until then this inline SVG placeholder
+           shows instead (falls back to it if the image 404s). -->
+      <img id="sortingHatImg" src="assets/sorting-hat.png" alt="The Sorting Hat"
+           onerror="this.style.display='none'; document.getElementById('sortingHatFallback').style.display='block';" />
+      <svg id="sortingHatFallback" viewBox="0 0 100 100" style="display:none">
+        <path d="M50 8 C40 30 15 55 10 82 C35 90 65 90 90 82 C85 55 60 30 50 8 Z" fill="#4a3826" stroke="#2b1d10" stroke-width="2" />
+        <ellipse cx="50" cy="82" rx="42" ry="9" fill="#3a2c1a" stroke="#2b1d10" stroke-width="2" />
+        <path d="M50 8 C46 20 55 35 47 48 C60 40 52 24 50 8 Z" fill="#2b1d10" opacity="0.5" />
+      </svg>
+    </div>
+
     <div id="scrollInnerSorting">
-      <div id="sortingHat" aria-hidden="true">
-        <!-- Drop your own hat image at assets/sorting-hat.png and it's
-             used automatically; until then this inline SVG placeholder
-             shows instead (falls back to it if the image 404s). -->
-        <img id="sortingHatImg" src="assets/sorting-hat.png" alt="The Sorting Hat"
-             onerror="this.style.display='none'; document.getElementById('sortingHatFallback').style.display='block';" />
-        <svg id="sortingHatFallback" viewBox="0 0 100 100" style="display:none">
-          <path d="M50 8 C40 30 15 55 10 82 C35 90 65 90 90 82 C85 55 60 30 50 8 Z" fill="#4a3826" stroke="#2b1d10" stroke-width="2" />
-          <ellipse cx="50" cy="82" rx="42" ry="9" fill="#3a2c1a" stroke="#2b1d10" stroke-width="2" />
-          <path d="M50 8 C46 20 55 35 47 48 C60 40 52 24 50 8 Z" fill="#2b1d10" opacity="0.5" />
-        </svg>
-      </div>
-      <h1 id="sortingStatus">Hmm... let me think...</h1>
+      <h1 id="sortingStatus" class="hidden">Hmm... let me think...</h1>
       <div id="sortingResult" class="hidden">
         <p id="sortingHouseName"></p>
         <p id="sortingFullName"></p>
@@ -121,7 +133,7 @@
   <div id="titleBanner" aria-hidden="true">
     <div id="titleMain">The Marauder's Map</div>
     <div id="titleSub">West Herts' own rascals are proud to present</div>
-    <div id="titleCredit">Enchanted by Simon Bristlewood</div>
+    <div id="titleCredit">Enchanted by Simon Bristlebeard</div>
   </div>
   <div id="compassRose" aria-hidden="true">
     <svg viewBox="0 0 100 100" width="100%" height="100%">
@@ -144,14 +156,31 @@
   <div id="mischiefToast" aria-hidden="true">Mischief Managed.</div>
   <div id="mischiefFull" aria-hidden="true">Mischief Managed.</div>
 
-  <!-- Who's currently visible in your group -->
-  <div id="memberList" class="hidden">
-    <button id="memberListToggle" type="button">0 in group</button>
-    <div id="memberListCode" class="hidden">
-      Code: <span id="memberListCodeValue"></span>
-      <button id="memberListCodeCopy" type="button">Copy</button>
+  <!-- Group info + music — a wand tucked at the side of the map,
+       same tap-to-slide-out-a-panel pattern as the oath screen's join
+       wand, replacing what used to be a plain "X in group" pill. -->
+  <div id="memberList">
+    <button id="memberListToggle" type="button" aria-haspopup="dialog" aria-expanded="false">
+      <img src="assets/wand-icon.png" alt="Group &amp; music" />
+      <span id="memberListCount" class="hidden">1</span>
+    </button>
+
+    <div id="memberPanelOverlay">
+      <div id="memberPanel" role="dialog" aria-label="Group and music">
+        <button id="memberPanelClose" type="button" aria-label="Close">&times;</button>
+
+        <div id="memberListCode" class="hidden">
+          Code: <span id="memberListCodeValue"></span>
+          <button id="memberListCodeCopy" type="button">Copy</button>
+        </div>
+        <ul id="memberListItems"></ul>
+
+        <label id="musicToggleRow">
+          <input type="checkbox" id="musicToggleCheckbox" checked />
+          Background music
+        </label>
+      </div>
     </div>
-    <ul id="memberListItems"></ul>
   </div>
 
   <!-- Parchment-styled marker naming, replaces native prompt() -->

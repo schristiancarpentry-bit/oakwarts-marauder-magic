@@ -153,32 +153,60 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 #scrollSorting {
   position: fixed;
   inset: 0;
+  /* Fallback only — visible before the video paints, or if it fails
+     to load/play entirely (offline, format unsupported, etc). */
   background: url("assets/parchment.jpg") center/cover no-repeat;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
   flex-direction: column;
   z-index: 1950;
   opacity: 0;
   pointer-events: none;
+  overflow: hidden;
 }
-#scrollInnerSorting {
-  background: rgba(255, 248, 220, 0.85);
-  border: 2px solid var(--parchment-brown);
-  border-radius: 12px;
-  padding: 2rem 3rem;
-  max-width: min(90vw, 26rem);
-  box-sizing: border-box;
-  text-align: center;
-  font-family: var(--font-display);
-  color: var(--ink-dark);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+
+/* Simon's doors-open reveal clip. object-fit:contain (never cropped) so
+   the hat can be positioned by exact percentage coordinates within the
+   video's own frame and reliably land on the stool regardless of the
+   viewport's aspect ratio — object-fit:cover would crop unpredictably
+   on screens much wider/narrower than the (portrait) source video,
+   throwing that position off. The dark fill matches the clip's own
+   door-wood tones so any letterbox bars blend in rather than reading
+   as plain black bars. Starts transparent — script.js fades it in only
+   once it's actually seeked to the right starting frame, so there's no
+   flash of the wrong moment while it loads. */
+#sortingVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #1a1006;
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
+
+/* Positioned via JS (script.js positionHatOnStool()) to land exactly on
+   the stool seat in the video, computed from the video's actual
+   letterboxed content rect — left/top below are just a safe fallback
+   for the instant before that JS runs. transform anchors the hat's own
+   base (not its centre) to that point, and stays part of every
+   transform since #sortingHat.decided has to preserve it too. */
 #sortingHat {
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: clamp(150px, 45vw, 220px);
   height: clamp(150px, 45vw, 220px);
-  margin: 0 auto 1rem;
+  transform: translate(-50%, -85%);
   animation: hatThink 0.9s ease-in-out infinite;
+  opacity: 1;
+  transition: opacity 0.6s ease;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.55));
+}
+#sortingHat.hatHidden {
+  opacity: 0;
 }
 #sortingHat img,
 #sortingHat svg {
@@ -186,16 +214,31 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   height: 100%;
 }
 @keyframes hatThink {
-  0%, 100% { transform: rotate(-6deg); }
-  50% { transform: rotate(6deg); }
+  0%, 100% { transform: translate(-50%, -85%) rotate(-6deg); }
+  50% { transform: translate(-50%, -85%) rotate(6deg); }
 }
 #sortingHat.decided {
   animation: none;
-  transform: rotate(0deg);
+  transform: translate(-50%, -85%) rotate(0deg);
+}
+
+/* Now just a text footer over the video, not a parchment card — the
+   scene itself provides the visual richness. Text-shadow does the
+   contrast work a background card used to. */
+#scrollInnerSorting {
+  position: relative;
+  z-index: 2;
+  padding: 0 1.5rem 2.2rem;
+  max-width: min(90vw, 26rem);
+  box-sizing: border-box;
+  text-align: center;
+  font-family: var(--font-display);
+  color: #fff8e6;
 }
 #sortingStatus {
   font-size: clamp(1.2rem, 4.5vw, 1.6rem);
   margin-bottom: 0.5rem;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9), 0 0 16px rgba(0, 0, 0, 0.7);
 }
 #sortingResult {
   margin-bottom: 1.2rem;
@@ -206,13 +249,15 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   margin: 0.2rem 0;
   letter-spacing: 1px;
   animation: inkFade 1s ease forwards;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9), 0 0 16px rgba(0, 0, 0, 0.75);
 }
 #sortingFullName {
   font-family: var(--font-hand);
   font-weight: 600;
   font-size: 1.3rem;
   margin: 0.2rem 0;
-  color: var(--ink-main-soft);
+  color: #f0e6cf;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9), 0 0 14px rgba(0, 0, 0, 0.7);
 }
 #continueSorting {
   font-family: var(--font-display);
@@ -461,39 +506,134 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 /* =========================================
    MEMBER LIST — who's currently in your group
 ========================================= */
+/* Group info + music, tucked at the side of the map — same wand-tab +
+   slide-out-panel pattern as the oath screen's join wand (see
+   #groupWandButton/#groupPanelOverlay below), reusing the exact
+   diagonal-image sizing/rotation trick worked out there. Positioned at
+   the right edge, vertically centred, clear of the bottom-right
+   modeToggle/mischiefToast stack and the top-left exit button. */
 #memberList {
-  position: fixed;
-  /* Stacked above #modeToggle, which now also lives bottom-right. */
-  bottom: max(82px, calc(env(safe-area-inset-bottom) + 82px));
-  right: 26px;
-  z-index: 1100;
   font-family: var(--font-body);
 }
 #memberListToggle {
-  background: var(--ink-main);
-  color: #fffaf0;
+  position: fixed;
+  top: 50%;
+  right: -2.6rem;
+  width: 11rem;
+  height: 5.5rem;
+  transform: translateY(-50%) rotate(-58deg);
+  transform-origin: 78% 42%;
+  background: transparent;
   border: none;
-  padding: 0.4rem 0.9rem;
-  border-radius: 8px;
+  padding: 0;
   cursor: pointer;
+  z-index: 1100;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
+  transition: filter 0.25s ease, transform 0.25s ease;
+}
+#memberListToggle img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+#memberListToggle:hover {
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.65));
+  transform: translateY(-50%) rotate(-58deg) scale(1.06);
+}
+/* Group headcount, shown at a glance without opening the panel — a
+   sibling of the wand button rather than nested inside it, same reason
+   as the oath wand's dot: a child's position would otherwise get
+   warped through the wand's own rotate() transform. */
+#memberListCount {
+  position: fixed;
+  top: 44.5%;
+  right: 0.9rem;
+  z-index: 1101;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.15rem;
+  border-radius: 50%;
+  background: #ffd700;
+  border: 1px solid rgba(43, 29, 16, 0.6);
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.9);
+  color: var(--ink-main);
   font-family: var(--font-display);
-  font-size: 0.9rem;
-  box-shadow: 0 0 8px rgba(43, 29, 16, 0.5);
+  font-weight: bold;
+  font-size: 0.7rem;
+  line-height: 1.1rem;
+  text-align: center;
+}
+
+#memberPanelOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: rgba(20, 12, 4, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 1200;
+}
+#memberList.expanded #memberPanelOverlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+#memberPanel {
+  position: relative;
+  background: rgba(255, 248, 220, 0.96);
+  border: 2px solid var(--parchment-brown);
+  border-width: 2px 0 2px 2px;
+  border-radius: 12px 0 0 12px;
+  padding: 1.6rem 2rem;
+  width: min(85vw, 22rem);
+  max-height: 85vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink-dark);
+  box-shadow: -6px 0 25px rgba(0, 0, 0, 0.4);
+  text-align: left;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#memberList.expanded #memberPanel {
+  transform: translateX(0);
+}
+#memberPanelClose {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--ink-dark);
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+}
+#memberPanelClose:hover {
+  color: var(--ink-red);
 }
 #memberListCode {
   display: none;
   align-items: center;
   gap: 0.5rem;
-  margin: 0.4rem 0 0;
+  margin: 0 0 0.8rem;
   padding: 0.4rem 0.7rem;
-  background: rgba(255, 248, 225, 0.95);
+  background: rgba(255, 255, 240, 0.8);
   border: 1px solid var(--parchment-brown);
   border-radius: 8px;
   font-size: 0.9rem;
   color: var(--ink-dark);
   white-space: nowrap;
 }
-#memberList.expanded #memberListCode:not(.hidden) {
+#memberListCode:not(.hidden) {
   display: flex;
 }
 #memberListCodeValue {
@@ -515,23 +655,32 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   background: var(--ink-red-light);
 }
 #memberListItems {
-  display: none;
   list-style: none;
-  margin: 0.4rem 0 0;
+  margin: 0 0 1rem;
   padding: 0.5rem 0.9rem;
-  background: rgba(255, 248, 225, 0.95);
+  background: rgba(255, 255, 240, 0.6);
   border: 1px solid var(--parchment-brown);
   border-radius: 8px;
   font-size: 0.9rem;
   color: var(--ink-dark);
-  max-height: 40vh;
+  max-height: 30vh;
   overflow-y: auto;
 }
-#memberList.expanded #memberListItems {
-  display: block;
+#memberListItems:empty {
+  display: none;
 }
 #memberListItems li {
   padding: 2px 0;
+}
+#musicToggleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(122, 94, 42, 0.3);
+  font-size: 0.9rem;
+  color: var(--ink-dark);
+  cursor: pointer;
 }
 
 /* Leaflet gives every divIcon a white box + grey border by default —
@@ -674,12 +823,15 @@ body.plainMode .marauderNameLabel {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 9px;
-  height: 9px;
+  width: 4.5px;
+  height: 4.5px;
   border-radius: 50%;
-  background: #f7ecd0;
-  border: 1.5px solid rgba(30, 20, 10, 0.85);
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+  /* Solid ink black instead of the pale cream fill — matches the map's
+     own black/dark-umber ink palette and reads with real contrast
+     against the sepia tiles, where a pale fill was easy to lose. */
+  background: var(--ink-main);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
   transform: translate(-50%, -50%);
 }
 

@@ -109,10 +109,43 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape") closeGroupPanel();
 });
 
-// Member list expand/collapse
+// Group + music panel — same wand-tab + slide-out pattern as the oath
+// screen's join wand, opened/closed the same three ways (its own X,
+// backdrop tap, Escape).
+const memberList = document.getElementById("memberList");
 const memberListToggleBtn = document.getElementById("memberListToggle");
-memberListToggleBtn.addEventListener("click", () => {
-  document.getElementById("memberList").classList.toggle("expanded");
+const memberPanelClose = document.getElementById("memberPanelClose");
+function openMemberPanel() {
+  memberList.classList.add("expanded");
+  memberListToggleBtn.setAttribute("aria-expanded", "true");
+}
+function closeMemberPanel() {
+  memberList.classList.remove("expanded");
+  memberListToggleBtn.setAttribute("aria-expanded", "false");
+}
+memberListToggleBtn.addEventListener("click", openMemberPanel);
+memberPanelClose.addEventListener("click", closeMemberPanel);
+document.getElementById("memberPanelOverlay").addEventListener("click", e => {
+  if (e.target.id === "memberPanelOverlay") closeMemberPanel(); // backdrop tap, not the card itself
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeMemberPanel();
+});
+
+// Background music — Simon-sourced track, starts the moment a name is
+// actually submitted (a genuine click/Enter-keypress, so this counts
+// as a real user gesture for autoplay purposes) and plays through the
+// Sorting/oath/map screens continuously. Muted state is remembered
+// across sessions so the choice sticks on reopen, not just this visit.
+const themeMusic = new Audio("assets/theme-music.mp3");
+themeMusic.loop = true;
+themeMusic.volume = 0.4;
+themeMusic.muted = localStorage.getItem("musicMuted") === "true";
+const musicToggleCheckbox = document.getElementById("musicToggleCheckbox");
+musicToggleCheckbox.checked = !themeMusic.muted;
+musicToggleCheckbox.addEventListener("change", () => {
+  themeMusic.muted = !musicToggleCheckbox.checked;
+  localStorage.setItem("musicMuted", themeMusic.muted ? "true" : "false");
 });
 
 // Lets whoever started (or joined) a group actually see and share the
@@ -206,6 +239,7 @@ function fireMagicAt(x, y) {
 
 // Step 1: enter name -> Step 1.5: get Sorted
 const scrollSorting = document.getElementById("scrollSorting");
+const sortingVideo = document.getElementById("sortingVideo");
 const sortingHat = document.getElementById("sortingHat");
 const sortingStatus = document.getElementById("sortingStatus");
 const sortingResult = document.getElementById("sortingResult");
@@ -213,6 +247,84 @@ const sortingHouseName = document.getElementById("sortingHouseName");
 const sortingFullName = document.getElementById("sortingFullName");
 const continueSortingBtn = document.getElementById("continueSorting");
 let marauderHouse = null; // { name, color, accent }
+
+// Simon's reveal clip is a fixed-position portrait shot — the stool
+// sits at this fraction of the video's own frame (read off a captured
+// frame, not guessed), regardless of how the video ends up letterboxed
+// on any given screen.
+const STOOL_ANCHOR = { x: 0.52, y: 0.61 };
+
+// object-fit:contain scales the video's actual pixel content to fit
+// inside its box without changing the box itself — so a plain
+// percentage position on a child would be relative to the wrong
+// (unletterboxed) rectangle. Computes the real on-screen rect of the
+// video's visible content so the hat can be placed inside THAT.
+function positionHatOnStool() {
+  if (!sortingVideo.videoWidth) return; // metadata not loaded yet
+  const cw = sortingVideo.clientWidth, ch = sortingVideo.clientHeight;
+  const vw = sortingVideo.videoWidth, vh = sortingVideo.videoHeight;
+  const scale = Math.min(cw / vw, ch / vh);
+  const rw = vw * scale, rh = vh * scale;
+  const offsetX = (cw - rw) / 2, offsetY = (ch - rh) / 2;
+  sortingHat.style.left = `${offsetX + rw * STOOL_ANCHOR.x}px`;
+  sortingHat.style.top = `${offsetY + rh * STOOL_ANCHOR.y}px`;
+}
+window.addEventListener("resize", () => {
+  if (sortingVideo.videoWidth) positionHatOnStool();
+});
+
+// Plays the reveal clip, then hands off to the existing hat ceremony.
+// The clip's first ~2.6s is the doors CLOSING (reads backwards for what
+// we actually want), so this skips straight to the doors-closed
+// close-up and plays the genuine "closed -> swings open -> reveal"
+// portion through to its natural end, then holds on that last frame
+// (video just stops there once "ended" fires, nothing extra needed)
+// while the hat fades in on the stool and the usual sequence begins.
+// If the video can't load/play for any reason, falls straight through
+// to the ceremony on the plain parchment fallback rather than getting
+// stuck waiting on something that'll never fire.
+function beginSortingCeremony() {
+  let started = false;
+  function proceed() {
+    if (started) return;
+    started = true;
+    sortingHat.classList.remove("hatHidden");
+    runSorting();
+  }
+
+  if (!sortingVideo.canPlayType || !sortingVideo.canPlayType("video/mp4")) {
+    proceed();
+    return;
+  }
+
+  const fallbackTimer = setTimeout(proceed, 4500);
+  sortingVideo.addEventListener("ended", () => { clearTimeout(fallbackTimer); proceed(); }, { once: true });
+  sortingVideo.addEventListener("error", () => { clearTimeout(fallbackTimer); proceed(); }, { once: true });
+
+  function seekToStart() {
+    positionHatOnStool();
+    const dur = sortingVideo.duration;
+    if (!isFinite(dur) || dur <= 0) { clearTimeout(fallbackTimer); proceed(); return; }
+    sortingVideo.currentTime = Math.max(0, dur - 2.45);
+  }
+  function afterSeek() {
+    sortingVideo.style.opacity = "1";
+    sortingVideo.play().catch(() => { clearTimeout(fallbackTimer); proceed(); });
+  }
+  // preload="auto" often means metadata has ALREADY loaded by the time
+  // this runs (name entry usually happens well after page load) — a
+  // plain {once:true} listener for an event that already fired would
+  // just never call back, silently killing the whole video and (after
+  // the fallback timer) skipping straight to the plain parchment. This
+  // checks readyState directly rather than assuming the event is still
+  // ahead of us.
+  if (sortingVideo.readyState >= 1) {
+    seekToStart();
+  } else {
+    sortingVideo.addEventListener("loadedmetadata", seekToStart, { once: true });
+  }
+  sortingVideo.addEventListener("seeked", afterSeek, { once: true });
+}
 
 function proceedToSorting() {
   const firstName = capitalizeName(nameInput.value.trim());
@@ -224,7 +336,7 @@ function proceedToSorting() {
     scrollIntro.style.display = "none";
     scrollSorting.style.opacity = 1;
     scrollSorting.style.pointerEvents = "auto";
-    runSorting();
+    beginSortingCeremony();
   }, 1000);
 }
 
@@ -232,6 +344,17 @@ function proceedToSorting() {
 // no audio file to source, works immediately everywhere the Web
 // Speech API exists. Pitched down and slowed slightly for a more
 // "ancient talking hat" read than a flat default TTS voice.
+//
+// Real bug fixed here: Simon reported the hat's voice randomly
+// repeating minutes later, in the background, long after Sorting had
+// finished. Root cause is a known Chrome/Edge speechSynthesis quirk —
+// if the SpeechSynthesisUtterance has no reference kept anywhere once
+// the function that created it returns, it's eligible for garbage
+// collection while the browser's speech engine still thinks it's
+// "active," and the engine's own keep-alive/resume watchdog can end up
+// replaying it later out of nowhere. Keeping a persistent reference
+// (currentHatUtterance) stops it from being collected mid-flight.
+let currentHatUtterance = null;
 function speakAsHat(text) {
   if (!("speechSynthesis" in window)) return; // unsupported browser — fail quietly
   speechSynthesis.cancel(); // don't let two Sortings queue up and overlap
@@ -241,6 +364,7 @@ function speakAsHat(text) {
   const voices = speechSynthesis.getVoices();
   const preferred = voices.find(v => /male|david|daniel|george|arthur|ryan|guy/i.test(v.name));
   if (preferred) utter.voice = preferred;
+  currentHatUtterance = utter;
   speechSynthesis.speak(utter);
 }
 
@@ -267,6 +391,11 @@ function runSorting() {
   setTimeout(() => {
     marauderHouse = randomHouse();
     localStorage.setItem("marauderHouse", JSON.stringify(marauderHouse));
+
+    // Starts right as the hat actually makes its choice, not any
+    // earlier — silence through the whole build-up, then the music
+    // swells in with the reveal itself.
+    themeMusic.play().catch(() => {});
 
     sortingHat.classList.add("decided");
     sortingStatus.classList.add("hidden");
@@ -380,6 +509,10 @@ const mischiefFull = document.getElementById("mischiefFull");
 function closeMap() {
   leaveRoomCompletely();
   clearNpcs(); // stop the wander interval immediately rather than leaving it running in the background
+  // Belt-and-braces alongside the currentHatUtterance fix above — makes
+  // sure nothing from the Sorting ceremony can ever still be "live" in
+  // the speech engine once you're back out on the map.
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
 
   const mapEl = document.getElementById("map");
   const rect = exitButton.getBoundingClientRect();

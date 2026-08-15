@@ -59,22 +59,26 @@ function clearFriendMarkers() {
   friendMarkers = {};
 }
 
+// The wand button itself stays visible on the map at all times (it's
+// also the music mute control, which is relevant solo or not) — only
+// the group-specific content inside its panel (code + who's in it)
+// depends on actually being in a room.
 function updateMemberList(friends) {
-  const list = document.getElementById("memberList");
-  const toggle = document.getElementById("memberListToggle");
   const items = document.getElementById("memberListItems");
   const codeRow = document.getElementById("memberListCode");
   const codeValue = document.getElementById("memberListCodeValue");
+  const count = document.getElementById("memberListCount");
   if (!currentRoomCode) {
-    list.classList.add("hidden");
     codeRow.classList.add("hidden");
+    items.innerHTML = "";
+    count.classList.add("hidden");
     return;
   }
-  list.classList.remove("hidden");
   codeRow.classList.remove("hidden");
   codeValue.textContent = currentRoomCode;
   const activeCount = friends.filter(f => !f.hidden).length + 1; // +1 for you
-  toggle.textContent = `${activeCount} in group`;
+  count.textContent = activeCount;
+  count.classList.remove("hidden");
   items.innerHTML = "";
   const meItem = document.createElement("li");
   meItem.textContent = "You";
