@@ -53,6 +53,22 @@ const consentLabel = document.getElementById("consentLabel");
 const consentCheckbox = document.getElementById("consentCheckbox");
 const groupError = document.getElementById("groupError");
 
+// Capitalises each word as typed ("simon" -> "Simon", "mary jane" ->
+// "Mary Jane") — a plain lowercase name looks out of place next to a
+// proper wizarding surname on the parchment. Only fixes casing, never
+// adds/removes characters, so the cursor position stays put.
+function capitalizeName(str) {
+  return str.replace(/\S+/g, word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+}
+nameInput.addEventListener("input", () => {
+  const { selectionStart, selectionEnd } = nameInput;
+  const corrected = capitalizeName(nameInput.value);
+  if (corrected !== nameInput.value) {
+    nameInput.value = corrected;
+    nameInput.setSelectionRange(selectionStart, selectionEnd);
+  }
+});
+
 // Consent only matters if a group code is actually entered — with no
 // code, you're just navigating solo, nothing is shared with anyone.
 groupCodeInput.addEventListener("input", () => {
@@ -166,7 +182,7 @@ const continueSortingBtn = document.getElementById("continueSorting");
 let marauderHouse = null; // { name, color, accent }
 
 function proceedToSorting() {
-  const firstName = nameInput.value.trim();
+  const firstName = capitalizeName(nameInput.value.trim());
   marauderNameValue = firstName ? `${firstName} ${randomSurname()}` : "Unknown Marauder";
   localStorage.setItem("marauderName", marauderNameValue);
 

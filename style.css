@@ -451,14 +451,18 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   /* --house-color is set inline per-marker once someone's been Sorted
      (see script.js/presence.js); falls back to plain parchment-brown
      for anyone who hasn't been through the Sorting yet. */
-  border: 1.5px solid var(--house-color, var(--parchment-brown));
+  border: 2.5px solid var(--house-color, var(--parchment-brown));
   clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
   padding: 2px 16px;
   text-align: center;
   white-space: nowrap;
   pointer-events: none;
   text-shadow: 0 0 3px #fff;
-  box-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
+  /* A thin dark ring just outside the coloured border keeps real
+     people's tags readable against parchment/tiles of any shade —
+     the coloured border alone can wash out against similarly-toned
+     map underneath it. Gold glow kept for the magic feel. */
+  box-shadow: 0 0 0 1.5px rgba(37, 20, 8, 0.55), 0 2px 5px rgba(0, 0, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.5);
   opacity: 0;
   animation: inkFade 2s ease forwards;
 }
@@ -485,6 +489,10 @@ body.plainMode .marauderNameLabel {
   opacity: 0.8;
   font-style: italic;
   border-style: dashed;
+  border-width: 1.5px;
+  /* Keep the new dark contrast ring off ghosts — they're meant to
+     read as softer/less prominent than real people at a glance. */
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
 }
 .npcDot {
   width: 10px;
