@@ -215,19 +215,21 @@ memberListCodeCopyBtn.addEventListener("click", () => {
 // code is embedded as a URL param and read back on page load below.
 // Uses the native share sheet on phone (WhatsApp/Messages/etc.) where
 // available, falling back to a clipboard copy of the link on desktop.
+// Framed as a Portkey — a HP object that instantly transports whoever
+// touches it — since that's exactly what tapping this link does.
 const memberListInviteBtn = document.getElementById("memberListInvite");
 memberListInviteBtn.addEventListener("click", () => {
   if (!currentRoomCode) return;
   const link = `${location.origin}${location.pathname}?join=${encodeURIComponent(currentRoomCode)}`;
-  const shareText = "I solemnly swear that I am up to no good... join me on the Marauder's Map!";
+  const shareText = "I've enchanted this into a Portkey — touch it and it'll whisk you straight to the Marauder's Map!";
   if (navigator.share) {
-    navigator.share({ title: "West Herts Marauder Map", text: shareText, url: link }).catch(() => {});
+    navigator.share({ title: "A Portkey has arrived", text: shareText, url: link }).catch(() => {});
     return;
   }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(link).then(() => {
       const original = memberListInviteBtn.textContent;
-      memberListInviteBtn.textContent = "Link copied!";
+      memberListInviteBtn.textContent = "Portkey copied!";
       setTimeout(() => { memberListInviteBtn.textContent = original; }, 1500);
     }).catch(() => {});
   }
