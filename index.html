@@ -75,8 +75,23 @@
   <div id="scrollReveal">
     <div id="scrollInner2">
       <h1 id="scrollLine">I solemnly swear that I am up to no good.</h1>
+      <button id="enterMap">Mischief Managed.</button>
+    </div>
 
-      <div id="groupSection">
+    <!-- Small wand tab on the side of the screen — tap it to open the
+         group-join panel, instead of the code box sitting inline and
+         crowding the oath itself. -->
+    <button id="groupWandButton" type="button" aria-haspopup="dialog" aria-expanded="false">
+      <img src="assets/wand-icon.png" alt="Join your muggle friends" />
+    </button>
+    <!-- Sibling, not nested inside the rotated wand button — placing it
+         outside means its position is plain top/right on screen, not
+         warped through the wand's own rotate() transform. -->
+    <span id="groupWandDot" class="hidden" aria-hidden="true"></span>
+
+    <div id="groupPanelOverlay">
+      <div id="groupPanel" role="dialog" aria-label="Join your muggle friends">
+        <button id="groupPanelClose" type="button" aria-label="Close">&times;</button>
         <p id="groupHeading">Join your muggle friends</p>
         <label for="groupCode" id="groupSubLabel">Optional — enter a code to see each other, or leave blank to explore alone</label>
         <div id="groupCodeRow">
@@ -89,8 +104,6 @@
         </label>
         <p id="groupError" class="hidden"></p>
       </div>
-
-      <button id="enterMap">Mischief Managed.</button>
     </div>
   </div>
 

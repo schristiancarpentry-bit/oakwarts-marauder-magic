@@ -71,15 +71,42 @@ nameInput.addEventListener("input", () => {
 
 // Consent only matters if a group code is actually entered — with no
 // code, you're just navigating solo, nothing is shared with anyone.
+const groupWandDot = document.getElementById("groupWandDot");
 groupCodeInput.addEventListener("input", () => {
   const hasCode = groupCodeInput.value.trim().length > 0;
   consentLabel.classList.toggle("hidden", !hasCode);
   if (!hasCode) consentCheckbox.checked = false;
   groupError.classList.add("hidden");
+  // Lets you tell at a glance that a code is set without reopening
+  // the panel — the wand tab alone doesn't otherwise hint at it.
+  groupWandDot.classList.toggle("hidden", !hasCode);
 });
 generateCodeBtn.addEventListener("click", () => {
   groupCodeInput.value = generateGroupCode();
   groupCodeInput.dispatchEvent(new Event("input"));
+});
+
+// Group panel — the code box used to sit inline on the oath scroll and
+// crowded it; now it lives behind a small wand tab on the side of the
+// screen, sliding in only when tapped.
+const groupWandButton = document.getElementById("groupWandButton");
+const groupPanelOverlay = document.getElementById("groupPanelOverlay");
+const groupPanelClose = document.getElementById("groupPanelClose");
+function openGroupPanel() {
+  groupPanelOverlay.classList.add("show");
+  groupWandButton.setAttribute("aria-expanded", "true");
+}
+function closeGroupPanel() {
+  groupPanelOverlay.classList.remove("show");
+  groupWandButton.setAttribute("aria-expanded", "false");
+}
+groupWandButton.addEventListener("click", openGroupPanel);
+groupPanelClose.addEventListener("click", closeGroupPanel);
+groupPanelOverlay.addEventListener("click", e => {
+  if (e.target === groupPanelOverlay) closeGroupPanel(); // backdrop tap, not the card itself
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeGroupPanel();
 });
 
 // Member list expand/collapse
@@ -122,7 +149,13 @@ function fireConfetti(x, y, colors) {
     gravity: 0.9,
     scalar: 0.9,
     colors: colors || CONFETTI_COLORS,
-    origin: { x: x / window.innerWidth, y: y / window.innerHeight }
+    origin: { x: x / window.innerWidth, y: y / window.innerHeight },
+    // canvas-confetti's own default (z-index: 100) sits BELOW the
+    // Sorting Hat scroll (z-index 1950) and the oath scroll (1900),
+    // so a burst fired while either is on screen was rendering
+    // invisibly behind it. Pin it above every full-screen overlay
+    // in this app (highest is the marker modal at 3000).
+    zIndex: 3100
   });
 }
 
@@ -396,6 +429,7 @@ function closeMap() {
     // the group code can stay pre-filled for convenience, but the tick
     // itself resets so reopening always requires an explicit new "yes".
     consentCheckbox.checked = false;
+    closeGroupPanel(); // don't leave it open for next time
 
     // Bring the blank oath parchment back, ready to reopen.
     scrollReveal.style.display = "";

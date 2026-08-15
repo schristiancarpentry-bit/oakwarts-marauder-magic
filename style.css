@@ -100,9 +100,22 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
+/* Sits on Simon's scroll-banner artwork, bigger than the map-button
+   use — background-size:contain again (never stretched, same reasoning
+   as the buttons: safe because the text here is fixed, not variable
+   length), with the box sized generously so the ribbon reads clearly
+   rather than shrinking down to hug the text. */
 #scrollTitle {
-  font-size: clamp(1.4rem, 5vw, 1.8rem);
-  margin-bottom: 1rem;
+  font-size: clamp(1.3rem, 4.6vw, 1.7rem);
+  margin: -0.6rem -1rem 0.6rem;
+  padding: 2.8rem 1.5rem;
+  min-height: 8.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: url("assets/scroll-banner.png") center / contain no-repeat;
+  color: var(--ink-main);
+  text-shadow: 0 0 4px rgba(255, 248, 225, 0.9), 0 0 4px rgba(255, 248, 225, 0.9);
 }
 
 #marauderName {
@@ -276,15 +289,118 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 }
 
 /* =========================================
-   GROUP CODE + CONSENT (oath step)
+   GROUP WAND TAB + SLIDE-IN PANEL (oath step)
 ========================================= */
-#groupSection {
-  margin: 0.4rem 0 1.1rem;
+/* A small tab peeking in from the edge, rather than the code box
+   sitting inline and crowding the oath itself. Positioned relative to
+   #scrollReveal (fixed, fills the viewport), so it stays pinned to
+   the side of the screen regardless of the oath card's own size. */
+/* The source image is a wand drawn diagonally (~2:1, tip top-right,
+   handle bottom-left) with a lot of transparent padding around it —
+   sized/rotated here at its own natural aspect ratio and stood up
+   near-vertical so it reads as tucked in at the edge of the screen,
+   tip pointing in. Positioned by its right edge so most of the box
+   (mostly transparent anyway) can hang off-screen without clipping
+   the actual wand artwork. */
+#groupWandButton {
+  position: absolute;
+  top: 50%;
+  right: -2.6rem;
+  width: 11rem;
+  height: 5.5rem;
+  transform: translateY(-50%) rotate(-58deg);
+  transform-origin: 78% 42%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 10;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
+  transition: filter 0.25s ease, transform 0.25s ease;
+}
+#groupWandButton img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+#groupWandButton:hover {
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.65));
+  transform: translateY(-50%) rotate(-58deg) scale(1.06);
+}
+/* Lit up once a group code is actually set, so it's obvious at a
+   glance that friends are joined without having to reopen the panel.
+   A plain top/right position on screen near the wand's tip — kept as
+   a sibling of the wand button rather than nested inside it, since
+   the button's own rotate() transform would otherwise warp any
+   percentage-based position of a child too. */
+#groupWandDot {
+  position: absolute;
+  top: 44.5%;
+  right: 0.9rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: #ffd700;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.9);
+  border: 1px solid rgba(43, 29, 16, 0.6);
+  z-index: 11;
+}
+
+#groupPanelOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: rgba(20, 12, 4, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 20;
+}
+#groupPanelOverlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+#groupPanel {
+  position: relative;
+  background: rgba(255, 248, 220, 0.96);
+  border: 2px solid var(--parchment-brown);
+  border-width: 2px 0 2px 2px;
+  border-radius: 12px 0 0 12px;
+  padding: 1.6rem 2rem;
+  width: min(85vw, 22rem);
+  max-height: 85vh;
+  overflow-y: auto;
+  box-sizing: border-box;
   font-family: var(--font-body);
   font-size: 0.95rem;
   color: var(--ink-dark);
+  box-shadow: -6px 0 25px rgba(0, 0, 0, 0.4);
   text-align: left;
-  max-width: 22rem;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#groupPanelOverlay.show #groupPanel {
+  transform: translateX(0);
+}
+#groupPanelClose {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--ink-dark);
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+}
+#groupPanelClose:hover {
+  color: var(--ink-red);
 }
 #groupHeading {
   font-family: var(--font-title);
