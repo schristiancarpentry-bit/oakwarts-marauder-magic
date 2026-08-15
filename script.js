@@ -72,6 +72,22 @@ memberListToggleBtn.addEventListener("click", () => {
   document.getElementById("memberList").classList.toggle("expanded");
 });
 
+// Lets whoever started (or joined) a group actually see and share the
+// code — previously it vanished the moment you left the oath screen,
+// with no way to tell a friend what to type in.
+const memberListCodeCopyBtn = document.getElementById("memberListCodeCopy");
+memberListCodeCopyBtn.addEventListener("click", () => {
+  if (!currentRoomCode) return;
+  const done = () => {
+    const original = memberListCodeCopyBtn.textContent;
+    memberListCodeCopyBtn.textContent = "Copied!";
+    setTimeout(() => { memberListCodeCopyBtn.textContent = original; }, 1500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(currentRoomCode).then(done).catch(() => {});
+  }
+});
+
 // Parchment/ink/gold — kept consistent with the rest of the theme
 // rather than generic rainbow confetti.
 const CONFETTI_COLORS = ["#ffd700", "#d9a24a", "#f5ecd7", "#6e1f16", "#2b1d10"];

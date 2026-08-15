@@ -357,6 +357,40 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   font-size: 0.9rem;
   box-shadow: 0 0 8px rgba(43, 29, 16, 0.5);
 }
+#memberListCode {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0;
+  padding: 0.4rem 0.7rem;
+  background: rgba(255, 248, 225, 0.95);
+  border: 1px solid var(--parchment-brown);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--ink-dark);
+  white-space: nowrap;
+}
+#memberList.expanded #memberListCode:not(.hidden) {
+  display: flex;
+}
+#memberListCodeValue {
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+#memberListCodeCopy {
+  font-family: var(--font-display);
+  background: var(--ink-red);
+  color: #fffaf0;
+  border: none;
+  padding: 2px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  margin-left: auto;
+}
+#memberListCodeCopy:hover {
+  background: var(--ink-red-light);
+}
 #memberListItems {
   display: none;
   list-style: none;

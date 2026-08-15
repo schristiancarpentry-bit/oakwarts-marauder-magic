@@ -63,11 +63,16 @@ function updateMemberList(friends) {
   const list = document.getElementById("memberList");
   const toggle = document.getElementById("memberListToggle");
   const items = document.getElementById("memberListItems");
+  const codeRow = document.getElementById("memberListCode");
+  const codeValue = document.getElementById("memberListCodeValue");
   if (!currentRoomCode) {
     list.classList.add("hidden");
+    codeRow.classList.add("hidden");
     return;
   }
   list.classList.remove("hidden");
+  codeRow.classList.remove("hidden");
+  codeValue.textContent = currentRoomCode;
   const activeCount = friends.filter(f => !f.hidden).length + 1; // +1 for you
   toggle.textContent = `${activeCount} in group`;
   items.innerHTML = "";
