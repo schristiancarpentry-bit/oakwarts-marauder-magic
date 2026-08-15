@@ -286,11 +286,18 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   text-align: left;
   max-width: 22rem;
 }
-#groupSection label[for="groupCode"] {
+#groupHeading {
+  font-family: var(--font-title);
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+  margin: 0 0 0.2rem;
+  color: var(--ink-dark);
+}
+#groupSubLabel {
   display: block;
-  font-size: 0.85rem;
-  margin-bottom: 0.3rem;
-  opacity: 0.85;
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+  opacity: 0.8;
 }
 #groupCodeRow {
   display: flex;

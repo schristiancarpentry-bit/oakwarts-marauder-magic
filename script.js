@@ -456,6 +456,14 @@ function setMarauderMode(on) {
     }
   }
 
+  // Writing your position only happens inside a live GPS callback —
+  // toggling this on doesn't itself send anything. If you're stationary
+  // (very likely mid-test), the browser might not fire another GPS
+  // update for a long time, so nothing would ever actually reach
+  // Firestore. Same fix as the map-open case: replay the last known
+  // position immediately rather than waiting on a fresh callback.
+  if (on && lastKnownPos) handlePosition(lastKnownPos);
+
   // Closing half of the film's ritual phrase pair — the oath reveals
   // the map, "Mischief Managed" is the flourish for hiding it again.
   if (wasOn && !on) {
