@@ -578,51 +578,49 @@ body.plainMode .marauderNameLabel {
 /* =========================================
    MARAUDER MODE BUTTON
 ========================================= */
+/* Simon's sourced scroll-banner image, shared by all three map buttons.
+   background-size:contain deliberately does NOT stretch the artwork to
+   fill the button box (unlike a 9-slice/stretch approach) — the image
+   has quite elaborate, asymmetric curled ends with a lot of transparent
+   padding, and there's no way to visually verify a stretched result
+   here, so this is the safer choice: the banner always renders at its
+   true proportions, just possibly with a little breathing room on two
+   sides rather than filling the box edge-to-edge. */
+#modeToggle,
+#exitButton,
+#recentreButton {
+  background: url("assets/scroll-banner.png") center / contain no-repeat;
+  color: var(--ink-main);
+  text-shadow: 0 0 3px rgba(255, 248, 225, 0.85), 0 0 3px rgba(255, 248, 225, 0.85);
+  border: none;
+  padding: 1.4rem 2.4rem;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: bold;
+  font-size: 0.95rem;
+  z-index: 1100;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+  transition: transform 0.2s ease, filter 0.3s ease;
+}
+#modeToggle:hover,
+#exitButton:hover,
+#recentreButton:hover {
+  transform: scale(1.05);
+}
+
 #modeToggle {
   position: fixed;
   bottom: max(26px, calc(env(safe-area-inset-bottom) + 26px));
   right: 26px;
-  background: var(--ink-red);
-  color: #fffaf0;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-weight: bold;
-  font-size: 1rem;
-  z-index: 1100;
-  box-shadow: 0 0 8px rgba(110, 31, 22, 0.5);
-  transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
 }
 #modeToggle.active {
-  background: #5a4630;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-}
-#modeToggle:hover {
-  transform: scale(1.05);
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.75));
 }
 
 #exitButton {
   position: fixed;
   top: max(30px, calc(env(safe-area-inset-top) + 26px));
   left: 26px;
-  background: var(--ink-main);
-  color: #fffaf0;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-weight: bold;
-  font-size: 1rem;
-  z-index: 1100;
-  box-shadow: 0 0 8px rgba(43, 29, 16, 0.5);
-  transition: background 0.3s ease, transform 0.2s ease;
-}
-#exitButton:hover {
-  background: #4a3826;
-  transform: scale(1.05);
 }
 
 /* Big ink flourish that fills the screen while the map is closing,
@@ -789,21 +787,6 @@ body.plainMode #titleBanner.show {
   left: 26px;
   /* Sits just above the compass rose, same corner. */
   bottom: max(122px, calc(env(safe-area-inset-bottom) + 122px));
-  background: var(--ink-main);
-  color: #fffaf0;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-weight: bold;
-  font-size: 0.9rem;
-  z-index: 1100;
-  box-shadow: 0 0 8px rgba(43, 29, 16, 0.5);
-  transition: transform 0.2s ease;
-}
-#recentreButton:hover {
-  transform: scale(1.05);
 }
 
 #compassRose {
