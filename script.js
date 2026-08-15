@@ -447,9 +447,22 @@ function proceedToSorting() {
 // "active," and the engine's own keep-alive/resume watchdog can end up
 // replaying it later out of nowhere. Keeping a persistent reference
 // (currentHatUtterance) stops it from being collected mid-flight.
+//
+// Second, different bug fixed here: Simon heard the full "What do we
+// have here?" -> house-reveal sequence play on a genuinely fresh PC
+// boot, nothing open but the editor. Root cause: runSorting()'s three
+// speakAsHat() calls are scheduled with plain setTimeout, and if the
+// tab was sitting mid-Sorting when Windows put the PC to sleep (or
+// "Fast Startup" froze/restored the session instead of a true cold
+// boot), those timers just resume and fire once the tab wakes — with
+// nothing visibly "open" from the user's side, since the tab was
+// backgrounded the whole time. The document.hidden guard below stops
+// any new line from ever being SPOKEN while the tab isn't the one
+// actually on screen, regardless of why/when its timers fire.
 let currentHatUtterance = null;
 function speakAsHat(text) {
   if (!("speechSynthesis" in window)) return; // unsupported browser — fail quietly
+  if (document.hidden) return; // never speak into a backgrounded/inactive/asleep tab
   speechSynthesis.cancel(); // don't let two Sortings queue up and overlap
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 0.85;
@@ -460,6 +473,14 @@ function speakAsHat(text) {
   currentHatUtterance = utter;
   speechSynthesis.speak(utter);
 }
+
+// Belt-and-braces alongside the document.hidden guard above: if the
+// tab is already mid-utterance the moment it gets backgrounded (PC
+// sleeps, switch tabs, minimise, etc.), cut it off immediately rather
+// than letting it keep talking into a tab nobody's looking at.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && "speechSynthesis" in window) speechSynthesis.cancel();
+});
 
 function runSorting() {
   // Reset in case someone's been Sorted before this session (Exit -> reopen).
