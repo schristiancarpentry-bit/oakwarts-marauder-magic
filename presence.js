@@ -158,6 +158,22 @@ function renderFriends(friends) {
   });
 }
 
+// Tracks who we've already seen this listening session, so a brand
+// new arrival can be told apart from "everyone who was already here
+// when I started watching." null means the next snapshot is the very
+// first one — seed silently from it rather than announcing the whole
+// room as if they'd all just walked in.
+let knownFriendIds = null;
+
+function announceNewFriend(name) {
+  const toast = document.getElementById("friendJoinToast");
+  if (!toast) return;
+  toast.textContent = `A new muggle has appeared: ${name}!`;
+  toast.classList.add("show");
+  clearTimeout(announceNewFriend._hideTimer);
+  announceNewFriend._hideTimer = setTimeout(() => toast.classList.remove("show"), 3200);
+}
+
 function handleSnapshot(snapshot) {
   const now = Date.now();
   const friends = [];
@@ -176,6 +192,19 @@ function handleSnapshot(snapshot) {
       hidden: age > STALE_HIDE_MS
     });
   });
+
+  const activeIds = friends.filter(f => !f.hidden).map(f => f.id);
+  if (knownFriendIds === null) {
+    knownFriendIds = new Set(activeIds);
+  } else {
+    friends.forEach(f => {
+      if (!f.hidden && !knownFriendIds.has(f.id)) {
+        announceNewFriend(f.name);
+        knownFriendIds.add(f.id);
+      }
+    });
+  }
+
   renderFriends(friends);
   updateMemberList(friends);
 }
@@ -183,6 +212,7 @@ function handleSnapshot(snapshot) {
 // Starts (or resumes) listening for friends in the given room.
 function startRoomListener(code) {
   if (unsubscribeRoom) unsubscribeRoom();
+  knownFriendIds = null; // fresh listen session — next snapshot seeds silently, doesn't announce
   unsubscribeRoom = roomRef(code).onSnapshot(handleSnapshot, err => {
     console.error("Room listen error:", err);
   });
@@ -196,6 +226,7 @@ function pauseRoomListener() {
     unsubscribeRoom();
     unsubscribeRoom = null;
   }
+  knownFriendIds = null; // resuming later should re-seed silently, not announce everyone as "new"
   clearFriendMarkers();
   updateMemberList([]);
 }
@@ -231,6 +262,7 @@ function leaveRoomCompletely() {
   }
   currentRoomCode = null;
   myMemberId = null;
+  knownFriendIds = null; // next room joined should re-seed silently, not announce everyone as "new"
   clearFriendMarkers();
   updateMemberList([]);
 }

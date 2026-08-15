@@ -1022,6 +1022,37 @@ body.plainMode .marauderNameLabel {
   transform: translateY(0);
 }
 
+/* Drops in from the top when a friend actually arrives in the room —
+   never for people already there when you join, only genuine new
+   arrivals (see announceNewFriend() in presence.js). Top-centre, clear
+   of every other button cluster (which all live at the corners). */
+#friendJoinToast {
+  position: fixed;
+  top: max(96px, calc(env(safe-area-inset-top) + 92px));
+  left: 50%;
+  z-index: 1150;
+  pointer-events: none;
+  font-family: var(--font-hand);
+  font-weight: 600;
+  font-size: 1.15rem;
+  color: var(--ink-main);
+  background: rgba(255, 248, 225, 0.94);
+  clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
+  padding: 4px 20px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  max-width: 88vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translate(-50%, -10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+#friendJoinToast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 /* Ink-blot ripple — the visible spreading edge that accompanies the
    parchment being "eaten through" (see #scrollReveal.inkReveal) to
    reveal the map beneath, spreading out from the tap point. */
