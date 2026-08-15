@@ -311,9 +311,13 @@ function startMap(event) {
     compassRose.classList.add("show");
 
     // Force name update, then let the GPS callback actually start
-    // creating/moving your marker — see hasEnteredMap above.
+    // creating/moving your marker — see hasEnteredMap above. If a fix
+    // already arrived while we were still on the name/Sorting screens,
+    // use it right now instead of waiting on a fresh one that might be
+    // a long time coming on some phones.
     marauderNameValue = localStorage.getItem("marauderName") || "Unknown Marauder";
     hasEnteredMap = true;
+    if (lastKnownPos) handlePosition(lastKnownPos);
     map.invalidateSize();
   }, 1450);
 }
@@ -817,9 +821,82 @@ function clearNpcs() {
   npcs = [];
 }
 
+// Split out from the watchPosition callback so a position that arrived
+// BEFORE the map opened can be replayed immediately the moment it does
+// (see lastKnownPos below) — some phones (especially stationary/indoors)
+// won't fire another GPS update for a long time afterward, so simply
+// discarding an early fix could leave the map stuck with no marker and
+// no recentre for minutes.
+function handlePosition(pos) {
+  const lat = pos.coords.latitude;
+  const lon = pos.coords.longitude;
+  const currentName = getMarauderName();
+
+  if (!userMarker) {
+    // create user marker
+    userMarker = L.circleMarker([lat, lon], {
+      radius: 6,
+      color: "black",
+      fillColor: "black",
+      fillOpacity: 0.9
+    }).addTo(map);
+
+    // add marauder's name label — iconSize [0,0] lets the wrapper
+    // collapse to a point; the label sizes to its own text and
+    // centers itself via CSS (.mapLabelWrap), so long names grow
+    // the tag instead of overflowing or drifting off-centre.
+    const houseColor = getMarauderHouseColor();
+    const houseStyle = houseColor ? ` style="--house-color:${houseColor}"` : "";
+    const nameIcon = L.divIcon({
+      className: "marauderNameIcon",
+      html: `<div class="mapLabelWrap"><div class="marauderNameLabel"${houseStyle}>${currentName}</div></div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 40]
+    });
+
+    nameLabel = L.marker([lat, lon], { icon: nameIcon, interactive: false }).addTo(map);
+
+    setTimeout(() => map.setView([lat, lon], 18), 500);
+  } else {
+    // footfall trail — only while Marauder Mode is on, since it's
+    // part of the magic, not something a plain accurate map should show.
+    if (marauderOn) {
+      const prev = userMarker.getLatLng();
+      const jitterLat = prev.lat + (Math.random() - 0.5) * 0.00003;
+      const jitterLon = prev.lng + (Math.random() - 0.5) * 0.00003;
+      dropFootprint(jitterLat, jitterLon);
+    }
+
+    // update position + label text live
+    userMarker.setLatLng([lat, lon]);
+    nameLabel.setLatLng([lat, lon]);
+
+    // Update the name text only if it actually changed, and only the
+    // text itself — not the whole element. Replacing the element (as
+    // this used to do, every single GPS tick) restarts the ink-fade-in
+    // animation each time, which is what was making the tag flash on
+    // and off on phones where GPS updates fire often.
+    const labelDiv = nameLabel.getElement();
+    const innerLabel = labelDiv && labelDiv.querySelector(".marauderNameLabel");
+    if (innerLabel && innerLabel.textContent !== currentName) {
+      innerLabel.textContent = currentName;
+    }
+  }
+
+  // Share position with the group only while Marauder Mode is on —
+  // writeMyPosition() itself no-ops if no room has been joined.
+  if (marauderOn) writeMyPosition(lat, lon, currentName, getMarauderHouseColor());
+}
+
+// The most recent position, kept even while hasEnteredMap is still
+// false, so it can be replayed the instant the map opens instead of
+// waiting on a fresh GPS callback that might not arrive for a while.
+let lastKnownPos = null;
+
 if (navigator.geolocation) {
   navigator.geolocation.watchPosition(
     pos => {
+      lastKnownPos = pos;
       // GPS starts watching the moment the page loads — completely
       // independent of the oath/Sorting flow. Without this guard, a fix
       // arriving while still on the name-entry or Sorting screen would
@@ -829,67 +906,10 @@ if (navigator.geolocation) {
       // The name text self-corrects on the next tick, but the house
       // colour never does — it's only ever set once, at creation — so
       // this was the real cause of "the hat says one thing, the map
-      // shows another."
+      // shows another." (See handlePosition() above for why the early
+      // fix is cached rather than just dropped.)
       if (!hasEnteredMap) return;
-
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-      const currentName = getMarauderName();
-
-      if (!userMarker) {
-        // create user marker
-        userMarker = L.circleMarker([lat, lon], {
-          radius: 6,
-          color: "black",
-          fillColor: "black",
-          fillOpacity: 0.9
-        }).addTo(map);
-
-        // add marauder's name label — iconSize [0,0] lets the wrapper
-        // collapse to a point; the label sizes to its own text and
-        // centers itself via CSS (.mapLabelWrap), so long names grow
-        // the tag instead of overflowing or drifting off-centre.
-        const houseColor = getMarauderHouseColor();
-        const houseStyle = houseColor ? ` style="--house-color:${houseColor}"` : "";
-        const nameIcon = L.divIcon({
-          className: "marauderNameIcon",
-          html: `<div class="mapLabelWrap"><div class="marauderNameLabel"${houseStyle}>${currentName}</div></div>`,
-          iconSize: [0, 0],
-          iconAnchor: [0, 40]
-        });
-
-        nameLabel = L.marker([lat, lon], { icon: nameIcon, interactive: false }).addTo(map);
-
-        setTimeout(() => map.setView([lat, lon], 18), 500);
-      } else {
-        // footfall trail — only while Marauder Mode is on, since it's
-        // part of the magic, not something a plain accurate map should show.
-        if (marauderOn) {
-          const prev = userMarker.getLatLng();
-          const jitterLat = prev.lat + (Math.random() - 0.5) * 0.00003;
-          const jitterLon = prev.lng + (Math.random() - 0.5) * 0.00003;
-          dropFootprint(jitterLat, jitterLon);
-        }
-
-        // update position + label text live
-        userMarker.setLatLng([lat, lon]);
-        nameLabel.setLatLng([lat, lon]);
-
-        // Update the name text only if it actually changed, and only the
-        // text itself — not the whole element. Replacing the element (as
-        // this used to do, every single GPS tick) restarts the ink-fade-in
-        // animation each time, which is what was making the tag flash on
-        // and off on phones where GPS updates fire often.
-        const labelDiv = nameLabel.getElement();
-        const innerLabel = labelDiv && labelDiv.querySelector(".marauderNameLabel");
-        if (innerLabel && innerLabel.textContent !== currentName) {
-          innerLabel.textContent = currentName;
-        }
-      }
-
-      // Share position with the group only while Marauder Mode is on —
-      // writeMyPosition() itself no-ops if no room has been joined.
-      if (marauderOn) writeMyPosition(lat, lon, currentName, getMarauderHouseColor());
+      handlePosition(pos);
     },
     err => {
       console.error("GPS error:", err);
