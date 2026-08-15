@@ -447,24 +447,27 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 #groupPanelClose:hover {
   color: var(--ink-red);
 }
-#groupHeading {
+/* Shared by the oath screen's join panel AND the map's group panel
+   (see #mapGroupJoin below) — classes alongside the original IDs so
+   both can look identical without duplicating every rule. */
+#groupHeading, .groupHeading {
   font-family: var(--font-title);
   font-size: 1.15rem;
   letter-spacing: 0.5px;
   margin: 0 0 0.2rem;
   color: var(--ink-dark);
 }
-#groupSubLabel {
+#groupSubLabel, .groupSubLabel {
   display: block;
   font-size: 0.8rem;
   margin-bottom: 0.4rem;
   opacity: 0.8;
 }
-#groupCodeRow {
+#groupCodeRow, .groupCodeRow {
   display: flex;
   gap: 0.5rem;
 }
-#groupCode {
+#groupCode, .groupCode {
   flex: 1;
   font-family: var(--font-body);
   font-size: 1rem;
@@ -473,7 +476,7 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   border-radius: 6px;
   background: rgba(255, 255, 240, 0.8);
 }
-#generateCode {
+#generateCode, .generateCode {
   font-family: var(--font-display);
   font-size: 0.85rem;
   background: transparent;
@@ -483,10 +486,10 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   cursor: pointer;
   color: var(--ink-dark);
 }
-#generateCode:hover {
+#generateCode:hover, .generateCode:hover {
   background: rgba(122, 94, 42, 0.15);
 }
-#consentLabel {
+#consentLabel, .consentLabel {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
@@ -494,13 +497,31 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   font-size: 0.9rem;
   cursor: pointer;
 }
-#consentLabel input {
+#consentLabel input, .consentLabel input {
   margin-top: 0.2rem;
 }
-#groupError {
+#groupError, .groupError {
   color: var(--ink-red);
   font-size: 0.85rem;
   margin: 0.5rem 0 0;
+}
+#mapGroupJoin {
+  margin-bottom: 0.8rem;
+}
+#mapJoinGroup {
+  font-family: var(--font-display);
+  background: var(--parchment-brown);
+  color: #fffaf0;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-top: 0.7rem;
+}
+#mapJoinGroup:hover {
+  background: #9c7b3b;
 }
 
 /* =========================================
@@ -622,19 +643,24 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 }
 #memberListCode {
   display: none;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
   margin: 0 0 0.8rem;
+  font-size: 0.9rem;
+  color: var(--ink-dark);
+}
+#memberListCode:not(.hidden) {
+  display: flex;
+}
+#memberListCodeRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.4rem 0.7rem;
   background: rgba(255, 255, 240, 0.8);
   border: 1px solid var(--parchment-brown);
   border-radius: 8px;
-  font-size: 0.9rem;
-  color: var(--ink-dark);
   white-space: nowrap;
-}
-#memberListCode:not(.hidden) {
-  display: flex;
 }
 #memberListCodeValue {
   font-weight: bold;
@@ -653,6 +679,37 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 }
 #memberListCodeCopy:hover {
   background: var(--ink-red-light);
+}
+/* The primary action — invite is expected to be used more than the
+   raw code/Copy, since a tappable link beats typing a code by hand. */
+#memberListInvite {
+  font-family: var(--font-display);
+  background: var(--parchment-brown);
+  color: #fffaf0;
+  border: none;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+#memberListInvite:hover {
+  background: #9c7b3b;
+}
+#mapLeaveGroup {
+  font-family: var(--font-display);
+  background: transparent;
+  border: 1px solid var(--ink-red);
+  color: var(--ink-red);
+  border-radius: 6px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-top: 0.6rem;
+}
+#mapLeaveGroup:hover {
+  background: var(--ink-red);
+  color: #fffaf0;
 }
 #memberListItems {
   list-style: none;
@@ -895,9 +952,19 @@ body.plainMode .marauderNameLabel {
   position: fixed;
   bottom: max(26px, calc(env(safe-area-inset-bottom) + 26px));
   right: 26px;
+  /* A gentle "press me" breathing glow so it's obvious this is the
+     button that actually does something on first arrival — stops once
+     Marauder Mode is switched on (see .active below), since the point
+     is just to draw a first tap, not nag forever. */
+  animation: modePulse 2.4s ease-in-out infinite;
 }
 #modeToggle.active {
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.75));
+  animation: none;
+}
+@keyframes modePulse {
+  0%, 100% { filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35)); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 14px rgba(255, 215, 0, 0.85)); transform: scale(1.045); }
 }
 
 #exitButton {

@@ -60,20 +60,28 @@ function clearFriendMarkers() {
 }
 
 // The wand button itself stays visible on the map at all times (it's
-// also the music mute control, which is relevant solo or not) — only
-// the group-specific content inside its panel (code + who's in it)
-// depends on actually being in a room.
+// also the music mute control, which is relevant solo or not) — the
+// panel underneath it swaps between the "join a group" UI and the
+// "here's your code / who's in it" display depending on whether a
+// room's actually joined, same source of truth (currentRoomCode) both
+// times.
 function updateMemberList(friends) {
   const items = document.getElementById("memberListItems");
   const codeRow = document.getElementById("memberListCode");
   const codeValue = document.getElementById("memberListCodeValue");
   const count = document.getElementById("memberListCount");
+  const joinUi = document.getElementById("mapGroupJoin");
+  const leaveBtn = document.getElementById("mapLeaveGroup");
   if (!currentRoomCode) {
     codeRow.classList.add("hidden");
     items.innerHTML = "";
     count.classList.add("hidden");
+    if (joinUi) joinUi.classList.remove("hidden");
+    if (leaveBtn) leaveBtn.classList.add("hidden");
     return;
   }
+  if (joinUi) joinUi.classList.add("hidden");
+  if (leaveBtn) leaveBtn.classList.remove("hidden");
   codeRow.classList.remove("hidden");
   codeValue.textContent = currentRoomCode;
   const activeCount = friends.filter(f => !f.hidden).length + 1; // +1 for you

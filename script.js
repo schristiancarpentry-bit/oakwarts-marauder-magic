@@ -132,6 +132,53 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape") closeMemberPanel();
 });
 
+// Joining/creating a group directly from the map — same code+consent
+// flow as the oath screen (Simon: "the wand on the map should show
+// the group word and information not just the music"), just reachable
+// after you're already exploring, not only beforehand. Swaps between
+// #mapGroupJoin and the code/member display via updateMemberList()
+// in presence.js, which is the single source of truth for that state.
+const mapGroupCodeInput = document.getElementById("mapGroupCode");
+const mapGenerateCodeBtn = document.getElementById("mapGenerateCode");
+const mapConsentLabel = document.getElementById("mapConsentLabel");
+const mapConsentCheckbox = document.getElementById("mapConsentCheckbox");
+const mapJoinGroupBtn = document.getElementById("mapJoinGroup");
+mapGroupCodeInput.addEventListener("input", () => {
+  const hasCode = mapGroupCodeInput.value.trim().length > 0;
+  mapConsentLabel.classList.toggle("hidden", !hasCode);
+  if (!hasCode) {
+    mapConsentCheckbox.checked = false;
+    mapJoinGroupBtn.classList.add("hidden");
+  }
+});
+mapGenerateCodeBtn.addEventListener("click", () => {
+  mapGroupCodeInput.value = generateGroupCode();
+  mapGroupCodeInput.dispatchEvent(new Event("input"));
+});
+mapConsentCheckbox.addEventListener("change", () => {
+  mapJoinGroupBtn.classList.toggle("hidden", !mapConsentCheckbox.checked);
+});
+mapJoinGroupBtn.addEventListener("click", () => {
+  const code = mapGroupCodeInput.value.trim();
+  if (!code || !mapConsentCheckbox.checked) return;
+  joinRoom(code);
+  // joinRoom() deliberately doesn't start the listener itself (see
+  // presence.js) — if Marauder Mode is already on, start it and
+  // replay the last known position right away rather than waiting on
+  // the next GPS tick, same "cache + replay on gate-open" pattern used
+  // everywhere else this app deals with GPS timing.
+  if (marauderOn) {
+    startRoomListener(code);
+    if (lastKnownPos) handlePosition(lastKnownPos);
+  }
+  updateMemberList([]); // optimistic — real data follows once the listener has a snapshot
+  mapGroupCodeInput.value = "";
+  mapConsentCheckbox.checked = false;
+  mapConsentLabel.classList.add("hidden");
+  mapJoinGroupBtn.classList.add("hidden"); // otherwise stale-visible next time the join form reappears (e.g. after Leave)
+});
+document.getElementById("mapLeaveGroup").addEventListener("click", leaveRoomCompletely);
+
 // Background music — Simon-sourced track, starts the moment a name is
 // actually submitted (a genuine click/Enter-keypress, so this counts
 // as a real user gesture for autoplay purposes) and plays through the
@@ -163,6 +210,42 @@ memberListCodeCopyBtn.addEventListener("click", () => {
     navigator.clipboard.writeText(currentRoomCode).then(done).catch(() => {});
   }
 });
+
+// A tappable link beats a friend having to type a code by hand — the
+// code is embedded as a URL param and read back on page load below.
+// Uses the native share sheet on phone (WhatsApp/Messages/etc.) where
+// available, falling back to a clipboard copy of the link on desktop.
+const memberListInviteBtn = document.getElementById("memberListInvite");
+memberListInviteBtn.addEventListener("click", () => {
+  if (!currentRoomCode) return;
+  const link = `${location.origin}${location.pathname}?join=${encodeURIComponent(currentRoomCode)}`;
+  const shareText = "I solemnly swear that I am up to no good... join me on the Marauder's Map!";
+  if (navigator.share) {
+    navigator.share({ title: "West Herts Marauder Map", text: shareText, url: link }).catch(() => {});
+    return;
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(() => {
+      const original = memberListInviteBtn.textContent;
+      memberListInviteBtn.textContent = "Link copied!";
+      setTimeout(() => { memberListInviteBtn.textContent = original; }, 1500);
+    }).catch(() => {});
+  }
+});
+
+// An invite link lands here as ?join=CODE — pre-fills the code
+// wherever it's needed (oath screen and/or the map panel, whichever
+// the recipient reaches first) so all they have to do is tick consent,
+// not type anything. Doesn't auto-join on its own — Sorting still
+// happens first either way, and sharing your location is still an
+// explicit opt-in, never assumed just because a link was clicked.
+const inviteCode = new URLSearchParams(location.search).get("join");
+if (inviteCode) {
+  groupCodeInput.value = inviteCode;
+  groupCodeInput.dispatchEvent(new Event("input"));
+  mapGroupCodeInput.value = inviteCode;
+  mapGroupCodeInput.dispatchEvent(new Event("input"));
+}
 
 // Parchment/ink/gold — kept consistent with the rest of the theme
 // rather than generic rainbow confetti.
@@ -406,6 +489,18 @@ function runSorting() {
     continueSortingBtn.classList.remove("hidden");
     speakAsHat(marauderHouse.name + "!");
 
+    // Belt-and-braces on top of the currentHatUtterance fix in
+    // speakAsHat(): the Exit-button cleanup only helps once you've
+    // actually left the map, which could be many minutes (or never,
+    // this session) after Sorting finished — Simon caught it repeating
+    // while still on the map, well before that. This hard-cancels the
+    // engine shortly after the (short) house-name line would have
+    // finished, so nothing is left for Chrome's speech engine to
+    // mistakenly resume later regardless of how long you stay on the map.
+    setTimeout(() => {
+      if ("speechSynthesis" in window) speechSynthesis.cancel();
+    }, 3500);
+
     const rect = sortingHat.getBoundingClientRect();
     fireConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, [marauderHouse.color, marauderHouse.accent, "#f5ecd7"]);
   }, 6800);
@@ -445,6 +540,7 @@ function startMap(event) {
 
   if (groupCode) {
     joinRoom(groupCode);
+    updateMemberList([]); // so the map's group panel shows the code/display view right away, not the join form
   } else {
     leaveRoomCompletely();
   }

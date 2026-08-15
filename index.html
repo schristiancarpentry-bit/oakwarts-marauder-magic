@@ -169,11 +169,36 @@
       <div id="memberPanel" role="dialog" aria-label="Group and music">
         <button id="memberPanelClose" type="button" aria-label="Close">&times;</button>
 
+        <!-- Not in a room yet — same join UI as the oath screen, just
+             reachable from the map too now (shown/hidden by JS based
+             on whether a room's actually joined). -->
+        <div id="mapGroupJoin">
+          <p class="groupHeading">Join your muggle friends</p>
+          <label for="mapGroupCode" class="groupSubLabel">Optional — enter a code to see each other, or leave blank to explore alone</label>
+          <div class="groupCodeRow">
+            <input id="mapGroupCode" class="groupCode" type="text" placeholder="Enter the code..." autocomplete="off" />
+            <button id="mapGenerateCode" class="generateCode" type="button">New code</button>
+          </div>
+          <label id="mapConsentLabel" class="consentLabel hidden">
+            <input type="checkbox" id="mapConsentCheckbox" />
+            Do you want to be visible to this group while the app is open?
+          </label>
+          <button id="mapJoinGroup" type="button" class="hidden">Join</button>
+          <p id="mapGroupError" class="groupError hidden"></p>
+        </div>
+
+        <!-- Already in a room — the code to share, an invite link for
+             friends who'd rather just tap a link than type a code, who's
+             in it, and a way out. -->
         <div id="memberListCode" class="hidden">
-          Code: <span id="memberListCodeValue"></span>
-          <button id="memberListCodeCopy" type="button">Copy</button>
+          <div id="memberListCodeRow">
+            Code: <span id="memberListCodeValue"></span>
+            <button id="memberListCodeCopy" type="button">Copy</button>
+          </div>
+          <button id="memberListInvite" type="button">Send invite link</button>
         </div>
         <ul id="memberListItems"></ul>
+        <button id="mapLeaveGroup" type="button" class="hidden">Leave group</button>
 
         <label id="musicToggleRow">
           <input type="checkbox" id="musicToggleCheckbox" checked />
