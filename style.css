@@ -253,7 +253,19 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   margin: 0.2rem 0;
   letter-spacing: 1px;
   animation: inkFade 1s ease forwards;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9), 0 0 16px rgba(0, 0, 0, 0.75);
+  /* Real bug fixed: this text is coloured with the house's own brand
+     colour via JS (all four are quite dark), but was given the SAME
+     dark drop-shadow as its light-coloured siblings (#sortingStatus/
+     #sortingFullName) — a dark shadow behind already-dark text does
+     nothing for contrast, and reads poorly against the busy video
+     background behind it now. Needs the opposite pairing: a light
+     cream halo immediately around the letters, so dark house-coloured
+     text pops regardless of what's directly behind it in the video. */
+  text-shadow:
+    0 0 3px #fff8e6,
+    0 0 7px #fff8e6,
+    0 0 14px #fff8e6,
+    0 2px 6px rgba(0, 0, 0, 0.5);
 }
 #sortingFullName {
   font-family: var(--font-hand);
