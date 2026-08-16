@@ -1,0 +1,15 @@
+{
+  "name": "West Herts Marauder Map",
+  "short_name": "Marauder Map",
+  "description": "I solemnly swear that I am up to no good.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5ecd7",
+  "theme_color": "#3b2608",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
