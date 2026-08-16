@@ -303,6 +303,15 @@ body:not(.plainMode) #map .leaflet-tile-pane {
   font-family: var(--font-display);
   color: var(--ink-dark);
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  /* Real bug fixed: the oath card used to sit at full opacity for the
+     entire ~1.45s ink-reveal, while the map (raised above it, clipped
+     to a growing circle) revealed underneath — so for a moment you'd
+     see the oath text/button AND a circular window into the map at
+     the same time. Fading just this card out quickly (see startMap()
+     in script.js) removes the distracting overlap while leaving
+     #scrollReveal's own parchment texture as the backdrop the ink is
+     still visibly "eating through," which is the actual intended look. */
+  transition: opacity 0.25s ease;
 }
 
 #scrollLine {
@@ -535,6 +544,7 @@ body:not(.plainMode) #map .leaflet-tile-pane {
    modeToggle/mischiefToast stack and the top-left exit button. */
 #memberList {
   font-family: var(--font-body);
+  transition: opacity 0.3s ease;
 }
 #memberListToggle {
   position: fixed;
@@ -940,12 +950,35 @@ body.plainMode .marauderNameLabel {
   font-size: 0.95rem;
   z-index: 1100;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
-  transition: transform 0.2s ease, filter 0.3s ease;
+  transition: transform 0.2s ease, filter 0.3s ease, opacity 0.3s ease;
 }
 #modeToggle:hover,
 #exitButton:hover,
 #recentreButton:hover {
   transform: scale(1.05);
+}
+
+/* These floating buttons (plus the group wand, below) used to have no
+   hidden state of their own — they only ever stayed invisible because
+   something opaque happened to be covering them. The moment that cover
+   faded partway (e.g. the name-entry roll-up animation easing opacity
+   down over a full second), they'd show through underneath. Explicitly
+   hidden until the map is genuinely open (body.mapReady, added once in
+   startMap() / removed immediately in closeMap()) fixes that for good,
+   rather than depending on stacking order alone. */
+#modeToggle,
+#exitButton,
+#recentreButton,
+#memberList {
+  opacity: 0;
+  pointer-events: none;
+}
+body.mapReady #modeToggle,
+body.mapReady #exitButton,
+body.mapReady #recentreButton,
+body.mapReady #memberList {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 #modeToggle {

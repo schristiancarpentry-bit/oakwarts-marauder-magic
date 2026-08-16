@@ -25,12 +25,17 @@ function randomSurname() {
 // The four houses. "color" is used everywhere (name-tag border,
 // confetti burst) — Hufflepuff's is deliberately darker than the real
 // house yellow (#FFDB00), which fails contrast against the cream
-// parchment background.
+// parchment background. "speech" is a phonetic respelling fed to the
+// TTS engine ONLY (the visual text always uses the real spelling) —
+// generic system voices tend to flatten/mispronounce invented proper
+// nouns like these, and a hyphenated respelling gives the engine
+// natural syllable breaks to land on, reading noticeably less robotic
+// than the plain spelling does.
 const HOUSES = [
-  { name: "Gryffindor", color: "#740001", accent: "#d3a625" },
-  { name: "Slytherin", color: "#1a472a", accent: "#8a8a8a" },
-  { name: "Hufflepuff", color: "#8a6d00", accent: "#2b1d10" },
-  { name: "Ravenclaw", color: "#0e1a40", accent: "#946b2d" }
+  { name: "Gryffindor", speech: "Griffin-dor", color: "#740001", accent: "#d3a625" },
+  { name: "Slytherin", speech: "Slither-in", color: "#1a472a", accent: "#8a8a8a" },
+  { name: "Hufflepuff", speech: "Huffle-puff", color: "#8a6d00", accent: "#2b1d10" },
+  { name: "Ravenclaw", speech: "Raven-claw", color: "#0e1a40", accent: "#946b2d" }
 ];
 function randomHouse() {
   return HOUSES[Math.floor(Math.random() * HOUSES.length)];
@@ -256,6 +261,13 @@ if (inviteCode) {
   mapConsentCheckbox.checked = true;
   mapConsentCheckbox.dispatchEvent(new Event("change")); // reveals the map's Join button
 }
+
+// The Hat's voice greets you on the very first screen too, not just at
+// Sorting — timed to land as the scroll finishes its 1s unroll rather
+// than talking over the animation. speakAsHat() already no-ops quietly
+// if the tab isn't visible or speechSynthesis isn't available, so this
+// degrades the same graceful way everywhere else in the app does.
+setTimeout(() => speakAsHat("Who are you, Marauder?"), 900);
 
 // Parchment/ink/gold — kept consistent with the rest of the theme
 // rather than generic rainbow confetti.
@@ -518,7 +530,7 @@ function runSorting() {
     sortingFullName.textContent = marauderNameValue;
     sortingResult.classList.remove("hidden");
     continueSortingBtn.classList.remove("hidden");
-    speakAsHat(marauderHouse.name + "!");
+    speakAsHat(marauderHouse.speech + "!"); // phonetic respelling — see HOUSES above
 
     // Belt-and-braces on top of the currentHatUtterance fix in
     // speakAsHat(): the Exit-button cleanup only helps once you've
@@ -589,6 +601,15 @@ function startMap(event) {
 
   fireMagicAt(x, y);
 
+  // Real bug fixed: the oath card (text + Mischief Managed button)
+  // used to stay fully visible for the whole ~1.45s reveal below,
+  // overlapping the map peeking through the growing circle — Simon
+  // caught this as "showing bits of the rest of the tool." Fading
+  // just the card out immediately fixes the overlap while leaving
+  // #scrollReveal's own parchment texture as the visible backdrop
+  // being "eaten through," which is the actual intended effect.
+  document.getElementById("scrollInner2").style.opacity = "0";
+
   // Ink-blot reveal: the map is raised above the parchment and shown
   // only within a growing circle centred on the tap point, so the
   // parchment appears "eaten through" by ink spreading to the edges.
@@ -614,6 +635,16 @@ function startMap(event) {
     parchmentFrame.classList.add("show");
     titleBanner.classList.add("show");
     compassRose.classList.add("show");
+    // Real bug fixed: Exit/Recentre/Marauder Mode/the group wand had no
+    // hidden state of their own — they only ever stayed invisible
+    // because something opaque happened to sit on top of them. The
+    // moment that covering screen faded (e.g. the name-entry roll-up
+    // animation, which eases opacity down over a full second), they
+    // showed through underneath — Simon: "showing bits of the rest of
+    // the tool, like other screens." Now gated on this class instead,
+    // added only once the map is genuinely open (see .mapReady in
+    // style.css), removed immediately when Exit is pressed.
+    document.body.classList.add("mapReady");
 
     // Force name update, then let the GPS callback actually start
     // creating/moving your marker — see hasEnteredMap above. If a fix
@@ -636,6 +667,7 @@ const mischiefFull = document.getElementById("mischiefFull");
 function closeMap() {
   leaveRoomCompletely();
   clearNpcs(); // stop the wander interval immediately rather than leaving it running in the background
+  document.body.classList.remove("mapReady"); // hide the floating map buttons right away, not just once the close finishes
   // Belt-and-braces alongside the currentHatUtterance fix above — makes
   // sure nothing from the Sorting ceremony can ever still be "live" in
   // the speech engine once you're back out on the map.
@@ -691,8 +723,11 @@ function closeMap() {
     consentCheckbox.checked = false;
     closeGroupPanel(); // don't leave it open for next time
 
-    // Bring the blank oath parchment back, ready to reopen.
+    // Bring the blank oath parchment back, ready to reopen — including
+    // the card itself, faded out at the start of this same reveal
+    // (see startMap()) and otherwise never reset back to visible.
     scrollReveal.style.display = "";
+    document.getElementById("scrollInner2").style.opacity = "";
   }, 1450);
 }
 exitButton.addEventListener("click", closeMap);
