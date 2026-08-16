@@ -508,6 +508,18 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
+// Fourth report of the hat's voice surviving a close — belt-and-braces
+// on top of belt-and-braces. pagehide is the standard "this page is
+// actually going away" event and fires more reliably than
+// visibilitychange for a genuine close/navigate-away on some browsers
+// (particularly iOS Safari/PWA closes, which have known quirks where
+// visibilitychange doesn't always fire cleanly). No resume logic here
+// on purpose — if the page is going away, there's nothing to resume.
+window.addEventListener("pagehide", () => {
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  themeMusic.pause();
+});
+
 function runSorting() {
   // Reset in case someone's been Sorted before this session (Exit -> reopen).
   sortingHat.classList.remove("decided");
@@ -681,6 +693,7 @@ const mischiefFull = document.getElementById("mischiefFull");
 function closeMap() {
   leaveRoomCompletely();
   clearNpcs(); // stop the wander interval immediately rather than leaving it running in the background
+  stopKnightBusSchedule();
   document.body.classList.remove("mapReady"); // hide the floating map buttons right away, not just once the close finishes
   // Belt-and-braces alongside the currentHatUtterance fix above — makes
   // sure nothing from the Sorting ceremony can ever still be "live" in
@@ -805,8 +818,10 @@ function setMarauderMode(on) {
     fireInkRippleAt(x, y);
     fireMagicAt(x, y);
     spawnNpcs();
+    startKnightBusSchedule();
   } else if (wasOn && !on) {
     clearNpcs();
+    stopKnightBusSchedule();
   }
 
   // This toggle IS the privacy switch for the friend-presence feature —
@@ -1192,6 +1207,157 @@ function clearNpcs() {
     map.removeLayer(npc.label);
   });
   npcs = [];
+}
+
+// =============================================================
+// SHARED ROUTING (OSRM — free, no API key needed)
+// Used by both the Knight Bus ambient effect below AND the real
+// "route to a place" feature (see the search button). OSRM's public
+// demo server is a free, shared community resource with no uptime
+// guarantee and modest rate limits — genuinely fine for a personal
+// app at this scale, same spirit as the free OSM tiles this app
+// already runs on, but not something to lean on if this ever saw
+// serious traffic (a self-hosted OSRM instance would be the next
+// step then, not a code change here).
+// =============================================================
+async function fetchRoute(fromLat, fromLon, toLat, toLon, profile) {
+  const url = `https://router.project-osrm.org/route/v1/${profile}/${fromLon},${fromLat};${toLon},${toLat}?overview=full&geometries=geojson`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.routes || !data.routes[0]) return null;
+  const route = data.routes[0];
+  return {
+    points: route.geometry.coordinates.map(([lon, lat]) => [lat, lon]), // OSRM gives [lon,lat]; Leaflet wants [lat,lon]
+    distanceM: route.distance,
+    durationS: route.duration
+  };
+}
+
+function routeDistanceM(points) {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    total += Math.hypot(
+      (points[i][0] - points[i - 1][0]) * 111320,
+      (points[i][1] - points[i - 1][1]) * 111320 * Math.cos((points[i][0] * Math.PI) / 180)
+    );
+  }
+  return total;
+}
+
+// Moves a marker point-by-point along a route, each hop's duration
+// proportional to its real distance so speed reads as roughly
+// constant regardless of how many/few points OSRM returned — same
+// "moves via CSS transform + transition" technique as the NPCs, just
+// with a per-segment transition-duration set dynamically instead of a
+// single fixed one, and driven by real road geometry instead of a
+// random wander. Resolves once the marker reaches the last point.
+function animateAlongRoute(marker, points, totalMs) {
+  return new Promise(resolve => {
+    if (points.length < 2) { resolve(); return; }
+    const totalDist = routeDistanceM(points) || 1;
+    let i = 0;
+    function step() {
+      if (i >= points.length - 1) { resolve(); return; }
+      const segDist = Math.hypot(
+        (points[i + 1][0] - points[i][0]) * 111320,
+        (points[i + 1][1] - points[i][1]) * 111320 * Math.cos((points[i][0] * Math.PI) / 180)
+      );
+      const segMs = Math.max(30, (segDist / totalDist) * totalMs);
+      const el = marker.getElement();
+      if (el) el.style.transition = `transform ${segMs}ms linear`;
+      marker.setLatLng(points[i + 1]);
+      i++;
+      setTimeout(step, segMs);
+    }
+    step();
+  });
+}
+
+// =============================================================
+// KNIGHT BUS — ambient surprise, purely decorative like the NPCs
+// (never touches Firestore, nothing for anyone else to see). Every
+// ~1 minute while Marauder Mode is on: a warning toast, then the bus
+// arrives along a REAL road route (not a straight line — this map
+// already shows real streets, so anything else would visibly cut
+// through buildings), stops beside you for 2s, then leaves back the
+// way it came.
+// =============================================================
+const KNIGHT_BUS_INTERVAL_MS = 60000; // Simon: "every 1 min"
+const KNIGHT_BUS_SPAWN_MIN_M = 300;
+const KNIGHT_BUS_SPAWN_SPREAD_M = 300;
+const KNIGHT_BUS_ARRIVE_MS = 5000; // "Night Bus in 5 seconds"
+const KNIGHT_BUS_WAIT_MS = 2000;
+const KNIGHT_BUS_DEPART_MS = 2000;
+
+let knightBusInterval = null;
+let knightBusRunning = false; // guards against two overlapping runs if a cycle ever takes longer than the interval
+
+function showKnightBusToast(text) {
+  const toast = document.getElementById("knightBusToast");
+  toast.textContent = text;
+  toast.classList.add("show");
+}
+function hideKnightBusToast() {
+  document.getElementById("knightBusToast").classList.remove("show");
+}
+
+function createKnightBusMarker(latlng) {
+  const icon = L.divIcon({
+    className: "knightBusMoving",
+    html: '<div class="knightBusPill"></div>',
+    iconSize: [26, 14],
+    iconAnchor: [13, 7]
+  });
+  return L.marker(latlng, { icon, interactive: false, zIndexOffset: 2000 }).addTo(map);
+}
+
+async function runKnightBus() {
+  if (!marauderOn || !userMarker || knightBusRunning) return;
+  knightBusRunning = true;
+  try {
+    const userPos = userMarker.getLatLng();
+    const angle = Math.random() * Math.PI * 2;
+    const dist = KNIGHT_BUS_SPAWN_MIN_M + Math.random() * KNIGHT_BUS_SPAWN_SPREAD_M;
+    const startLat = userPos.lat + metersToDegLat(Math.cos(angle) * dist);
+    const startLon = userPos.lng + metersToDegLon(Math.sin(angle) * dist, userPos.lat);
+
+    showKnightBusToast("The Knight Bus arrives in 5 seconds...");
+
+    // "driving" profile — it's a bus following the road network, not
+    // a pedestrian route like the real navigation feature uses.
+    const route = await fetchRoute(startLat, startLon, userPos.lat, userPos.lng, "driving").catch(() => null);
+    if (!route || route.points.length < 2) {
+      // No route found (or OSRM unreachable) — fail quietly, same
+      // grace as every other optional-flourish feature in this app.
+      // Try again next interval rather than forcing it.
+      hideKnightBusToast();
+      return;
+    }
+
+    const bus = createKnightBusMarker(route.points[0]);
+    await animateAlongRoute(bus, route.points, KNIGHT_BUS_ARRIVE_MS);
+    hideKnightBusToast();
+
+    await new Promise(r => setTimeout(r, KNIGHT_BUS_WAIT_MS));
+
+    await animateAlongRoute(bus, [...route.points].reverse(), KNIGHT_BUS_DEPART_MS);
+    map.removeLayer(bus);
+  } finally {
+    knightBusRunning = false;
+  }
+}
+
+function startKnightBusSchedule() {
+  stopKnightBusSchedule();
+  knightBusInterval = setInterval(runKnightBus, KNIGHT_BUS_INTERVAL_MS);
+}
+function stopKnightBusSchedule() {
+  if (knightBusInterval) {
+    clearInterval(knightBusInterval);
+    knightBusInterval = null;
+  }
+  hideKnightBusToast();
 }
 
 // Split out from the watchPosition callback so a position that arrived

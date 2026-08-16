@@ -860,6 +860,58 @@ body.plainMode .marauderNameLabel {
 }
 
 /* =========================================
+   THE KNIGHT BUS — ambient surprise
+========================================= */
+/* Pill shape (top-down view of a bus), vivid purple with a glow so
+   it's unmistakable even mid-dash. transition-duration is set inline
+   per-hop by animateAlongRoute() in script.js (each road segment
+   takes a different amount of time), so only the property/timing
+   function belong here. */
+.knightBusMoving {
+  transition-property: transform;
+  transition-timing-function: linear;
+}
+.knightBusPill {
+  width: 26px;
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #9451e0, #4b1a8a);
+  border: 1.5px solid #2a0d5c;
+  box-shadow: 0 0 10px rgba(148, 81, 224, 0.85), 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+/* Warning toast — same ribbon language as the other map toasts, its
+   own element (not shared with #friendJoinToast/#mischiefToast) so an
+   unrelated event firing at the same moment can't clobber this one's
+   text/timing mid-animation. */
+#knightBusToast {
+  position: fixed;
+  top: max(150px, calc(env(safe-area-inset-top) + 146px));
+  left: 50%;
+  z-index: 1150;
+  pointer-events: none;
+  font-family: var(--font-hand);
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #fff8e6;
+  background: linear-gradient(180deg, #6a2fb8, #3d1470);
+  clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
+  padding: 4px 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  max-width: 88vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translate(-50%, -10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+#knightBusToast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* =========================================
    PLACE LABELS FOR MARAUDER MODE
 ========================================= */
 .placeLabelText {
