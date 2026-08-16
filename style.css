@@ -862,8 +862,13 @@ body.plainMode .marauderNameLabel {
 /* =========================================
    THE KNIGHT BUS — ambient surprise
 ========================================= */
-/* Pill shape (top-down view of a bus), vivid purple with a glow so
-   it's unmistakable even mid-dash. transition-duration is set inline
+/* A circle rather than a directional pill/bus shape — Simon caught
+   that a fixed-orientation pill looks wrong turning corners along a
+   real road route, and there's no reliable "which way is it facing"
+   to rotate it to (same reasoning that turned the footprints into
+   plain dots earlier: sidestep the orientation problem entirely
+   rather than try to solve it). Vivid purple with a glow so it's
+   still unmistakable even mid-dash. transition-duration is set inline
    per-hop by animateAlongRoute() in script.js (each road segment
    takes a different amount of time), so only the property/timing
    function belong here. */
@@ -872,9 +877,9 @@ body.plainMode .marauderNameLabel {
   transition-timing-function: linear;
 }
 .knightBusPill {
-  width: 26px;
-  height: 14px;
-  border-radius: 7px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
   background: linear-gradient(180deg, #9451e0, #4b1a8a);
   border: 1.5px solid #2a0d5c;
   box-shadow: 0 0 10px rgba(148, 81, 224, 0.85), 0 2px 4px rgba(0, 0, 0, 0.45);

@@ -1306,8 +1306,8 @@ function createKnightBusMarker(latlng) {
   const icon = L.divIcon({
     className: "knightBusMoving",
     html: '<div class="knightBusPill"></div>',
-    iconSize: [26, 14],
-    iconAnchor: [13, 7]
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
   });
   return L.marker(latlng, { icon, interactive: false, zIndexOffset: 2000 }).addTo(map);
 }
