@@ -489,9 +489,23 @@ function speakAsHat(text) {
 // Belt-and-braces alongside the document.hidden guard above: if the
 // tab is already mid-utterance the moment it gets backgrounded (PC
 // sleeps, switch tabs, minimise, etc.), cut it off immediately rather
-// than letting it keep talking into a tab nobody's looking at.
+// than letting it keep talking into a tab nobody's looking at. Same
+// treatment for the theme music — pauses the instant the tab is
+// backgrounded/closed rather than carrying on regardless, and resumes
+// on return only if it was genuinely playing (not muted, not just
+// silent because Sorting hasn't happened yet) before it was hidden.
+let musicAutoPaused = false;
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden && "speechSynthesis" in window) speechSynthesis.cancel();
+  if (document.hidden) {
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    if (!themeMusic.paused) {
+      themeMusic.pause();
+      musicAutoPaused = true;
+    }
+  } else if (musicAutoPaused) {
+    musicAutoPaused = false;
+    if (!themeMusic.muted) themeMusic.play().catch(() => {});
+  }
 });
 
 function runSorting() {
@@ -672,6 +686,12 @@ function closeMap() {
   // sure nothing from the Sorting ceremony can ever still be "live" in
   // the speech engine once you're back out on the map.
   if ("speechSynthesis" in window) speechSynthesis.cancel();
+  // Real bug fixed: Simon reported the theme music kept playing after
+  // pressing Exit — nothing ever actually stopped it, since it's only
+  // ever started once (at the Sorting reveal) and nothing paused it
+  // afterward. Exit should mean everything audible stops, not just the
+  // visual map.
+  themeMusic.pause();
 
   const mapEl = document.getElementById("map");
   const rect = exitButton.getBoundingClientRect();
