@@ -1,3 +1,12 @@
+// Required for Android Chrome's automatic "Install app" prompt — it
+// won't offer to install a PWA at all without a registered service
+// worker, regardless of how correct the manifest is. sw.js
+// deliberately does no real caching (see its own comment) so this
+// can't ever cause a stale version to show after a future deploy.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+
 // -----------------------------
 // Scroll + name logic
 // -----------------------------
