@@ -78,7 +78,11 @@ body:not(.plainMode) #map .leaflet-tile-pane {
 #scrollIntro {
   position: fixed;
   inset: 0;
-  background: url("assets/parchment.jpg") center/cover no-repeat;
+  /* Simon's sourced castle/train artwork, sitting behind the "Who are
+     you, Marauder?" card — cover (not contain) so it fills the screen
+     on any device, matching the same full-bleed treatment as every
+     other background image in the app. */
+  background: url("assets/name-entry-bg.png") center/cover no-repeat;
   display: flex;
   justify-content: center;
   align-items: center;
